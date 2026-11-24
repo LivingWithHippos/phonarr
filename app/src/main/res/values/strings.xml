@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Phonarr</string>
+    <string name="notification_channel">Torznab server</string>
+    <string name="notification_title">Phonarr is running</string>
+    <string name="notification_text">Torznab server on 127.0.0.1:%1$d</string>
+    <string name="stop">Stop</string>
+    <string name="challenge_channel">Site checks</string>
+    <string name="challenge_title">%1$s needs a check</string>
+    <string name="challenge_text">Tap to open the site and pass its anti-bot check once.</string>
+</resources>

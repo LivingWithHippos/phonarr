@@ -1,0 +1,48 @@
+---
+id: testjson
+name: Test JSON
+description: "JSON API fixture"
+language: en-US
+type: public
+links:
+  - https://api.example/
+caps:
+  categories:
+    movies: Movies
+    tv: TV
+  modes:
+    search: [q]
+    movie-search: [q, imdbid]
+settings: []
+search:
+  paths:
+    - path: api/search
+      response:
+        type: json
+        noResultsMessage: '"results":[]'
+  inputs:
+    q: "{{ .Keywords }}"
+    imdb: "{{ .Query.IMDBID }}"
+  rows:
+    selector: results
+    count:
+      selector: total
+  fields:
+    title:
+      selector: name
+    category:
+      selector: type
+    infohash:
+      selector: hash
+    size:
+      selector: size
+    seeders:
+      selector: stats.seeders
+    leechers:
+      selector: stats.leechers
+    date:
+      selector: added
+    imdbid:
+      selector: imdb
+    genre:
+      selector: genres
