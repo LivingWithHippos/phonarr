@@ -1,5 +1,6 @@
 package com.github.livingwithhippos.phonarr.core
 
+import com.github.livingwithhippos.phonarr.core.torznab.isAdult
 import com.github.livingwithhippos.phonarr.core.util.DateTimeUtil
 import com.github.livingwithhippos.phonarr.core.util.Magnet
 import com.github.livingwithhippos.phonarr.core.util.ParseUtil
@@ -68,5 +69,20 @@ class UtilTest {
         val m = Magnet.buildPublicMagnetLink("abcdef0123456789abcdef0123456789abcdef01", "My Title")
         assertTrue(m.startsWith("magnet:?xt=urn:btih:ABCDEF0123456789ABCDEF0123456789ABCDEF01&dn=My%20Title&tr="))
         assertEquals("ABCDEF0123456789ABCDEF0123456789ABCDEF01", Magnet.getInfoHashFromMagnet(m))
+    }
+
+    @Test
+    fun adultCategories() {
+        assertTrue(com.github.livingwithhippos.phonarr.core.torznab.IndexerCategory(6000, "XXX").isAdult())
+        assertTrue(com.github.livingwithhippos.phonarr.core.torznab.IndexerCategory(6040, "XXX/x264").isAdult())
+        assertTrue(!com.github.livingwithhippos.phonarr.core.torznab.IndexerCategory(2000, "Movies").isAdult())
+        val mixed = com.github.livingwithhippos.phonarr.core.torznab.ReleaseInfo().apply {
+            categories = mutableListOf(
+                com.github.livingwithhippos.phonarr.core.torznab.IndexerCategory(2000),
+                com.github.livingwithhippos.phonarr.core.torznab.IndexerCategory(6010),
+            )
+        }
+        assertTrue(mixed.isAdult())
+        assertTrue(!com.github.livingwithhippos.phonarr.core.torznab.ReleaseInfo().isAdult())
     }
 }

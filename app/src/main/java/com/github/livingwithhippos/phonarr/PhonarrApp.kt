@@ -79,11 +79,15 @@ class AppContainer(app: Application) {
     val indexers = IndexerRepository(filesDir)
     val definitions = DefinitionRepository(File(filesDir, "Definitions"), httpClient)
     val searchService =
-        SearchService(indexers, definitions, httpClient, userAgent = userAgent, solver = solver)
+        SearchService(
+            indexers, definitions, httpClient, userAgent = userAgent, solver = solver,
+            hideAdult = { settings.settings.value.hideAdult },
+        )
     val server = TorznabServer(
         searchService,
         serverInfo(app),
         logRequests = app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
+        hideAdult = { settings.settings.value.hideAdult },
     ) { settings.settings.value.apiKey }
 
     private fun serverInfo(app: Application): ServerInfo {

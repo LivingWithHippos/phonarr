@@ -265,3 +265,9 @@ class IndexerCapabilitiesCategories {
         if (!node.contains(cat)) node.subCategories += cat
     }
 }
+
+/** The Newznab XXX tree (6000-6999): adult content. */
+fun IndexerCategory.isAdult(): Boolean = id in 6000..6999
+
+/** A release in any XXX category. Releases without categories can't be judged, so they aren't adult. */
+fun ReleaseInfo.isAdult(): Boolean = categories.any { it.isAdult() }

@@ -1,5 +1,6 @@
 package com.github.livingwithhippos.phonarr.core.data
 
+import com.github.livingwithhippos.phonarr.core.torznab.isAdult
 import com.github.livingwithhippos.phonarr.core.cardigann.CardigannIndexer
 import com.github.livingwithhippos.phonarr.core.cardigann.DownloadResult
 import com.github.livingwithhippos.phonarr.core.torznab.IndexerCapabilities
@@ -44,6 +45,8 @@ class SearchService(
     private val timeoutMs: Long = 90_000,
     private val userAgent: String = com.github.livingwithhippos.phonarr.core.cardigann.IndexerHttp.DEFAULT_USER_AGENT,
     private val solver: com.github.livingwithhippos.phonarr.core.cardigann.ChallengeSolver? = null,
+    /** read on every search, so the setting applies without restarting the server */
+    private val hideAdult: () -> Boolean = { false },
 ) {
     private val instances = HashMap<Int, Pair<IndexerConfig, CardigannIndexer>>()
 
@@ -130,6 +133,7 @@ class SearchService(
         }.awaitAll()
 
         var releases = results.flatMap { it.second.getOrNull().orEmpty() }
+        if (hideAdult()) releases = releases.filterNot { it.isAdult() }
         // filter by requested categories when the indexer returned category info
         if (query.categories.isNotEmpty()) {
             val wanted =

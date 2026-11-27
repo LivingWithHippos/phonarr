@@ -65,7 +65,8 @@ class IndexerCapabilities {
     private fun supported(params: List<String>, order: List<String>): String =
         (listOf("q") + order.filter { it != "q" && it in params }).joinToString(",")
 
-    fun toXml(serverTitle: String = "Phonarr"): String {
+    /** [hideAdult] leaves the XXX categories out, so clients don't offer them. */
+    fun toXml(serverTitle: String = "Phonarr", hideAdult: Boolean = false): String {
         val sb = StringBuilder()
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<caps>\n")
         sb.append("  <server title=\"").append(Xml.escape(serverTitle)).append("\" />\n")
@@ -92,6 +93,7 @@ class IndexerCapabilities {
         mode("book-search", bookSearchParams, BOOK_PARAMS)
         sb.append("  </searching>\n  <categories>\n")
         for (c in categories.getTorznabCategoryTree(sorted = true)) {
+            if (hideAdult && c.isAdult()) continue
             sb.append("    <category id=\"").append(c.id).append("\" name=\"")
                 .append(Xml.escape(c.name)).append('"')
             if (c.subCategories.isEmpty()) {

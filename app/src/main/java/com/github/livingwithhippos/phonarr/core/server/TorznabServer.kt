@@ -56,6 +56,8 @@ class TorznabServer(
     private val info: ServerInfo = ServerInfo(),
     /** log every request (debug builds only: queries can name what the user searches for) */
     private val logRequests: Boolean = false,
+    /** leave XXX categories out of the capabilities (results are filtered by [SearchService]) */
+    private val hideAdult: () -> Boolean = { false },
     private val apiKey: () -> String,
 ) {
     private var server: EmbeddedServer<*, *>? = null
@@ -142,7 +144,7 @@ class TorznabServer(
         try {
             when (t) {
                 "caps" -> call.respondText(
-                    search.capabilities(id).toXml(),
+                    search.capabilities(id).toXml(hideAdult = hideAdult()),
                     ContentType.Application.Xml
                 )
                 // Jackett and Prowlarr treat a missing t as a plain search (latest releases)

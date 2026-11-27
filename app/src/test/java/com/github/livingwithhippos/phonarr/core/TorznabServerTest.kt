@@ -41,17 +41,43 @@ class TorznabServerTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
-    private fun server(logRequests: Boolean = false): TorznabServer {
+    /** [adultTv] maps the test site's TV category to XXX, so its "Some Show" row counts as adult. */
+    private fun server(logRequests: Boolean = false, hideAdult: Boolean = false, adultTv: Boolean = false): TorznabServer {
         val dir = tmp.newFolder()
         val defs = File(dir, "Definitions").apply { mkdirs() }
-        File(defs, "testsite.yml").writeText(resource("testsite.yml"))
+        val yaml = resource("testsite.yml").let { if (adultTv) it.replace("cat: TV/HD", "cat: XXX/x264") else it }
+        File(defs, "testsite.yml").writeText(yaml)
         val client = HttpClient(MockEngine {
             respond(resource("testsite.html"), HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/html"))
         }) { followRedirects = false; expectSuccess = false }
         val indexers = IndexerRepository(dir)
         indexers.save(IndexerConfig(0, "testsite", "Test Site"))
-        val service = SearchService(indexers, DefinitionRepository(defs, client), client)
-        return TorznabServer(service, ServerInfo(appVersion = "1.0", osVersion = "16"), logRequests) { "secret" }
+        val service = SearchService(indexers, DefinitionRepository(defs, client), client, hideAdult = { hideAdult })
+        return TorznabServer(
+            service, ServerInfo(appVersion = "1.0", osVersion = "16"), logRequests, hideAdult = { hideAdult },
+        ) { "secret" }
+    }
+
+    @Test
+    fun hidesAdultResultsAndCategories() = testApplication {
+        val s = server(hideAdult = true, adultTv = true)
+        application { with(s) { module() } }
+        val results = client.get("/api?t=search&apikey=secret").bodyAsText()
+        assertTrue(results, results.contains("The Matrix 1999 1080p"))
+        assertTrue(results, !results.contains("Some Show S01E01"))
+        val caps = client.get("/api?t=caps&apikey=secret").bodyAsText()
+        assertTrue(caps, !caps.contains("id=\"6000\""))
+        assertTrue(caps, caps.contains("id=\"2000\""))
+    }
+
+    @Test
+    fun keepsAdultResultsByDefault() = testApplication {
+        val s = server(adultTv = true)
+        application { with(s) { module() } }
+        val results = client.get("/api?t=search&apikey=secret").bodyAsText()
+        assertTrue(results, results.contains("Some Show S01E01"))
+        val caps = client.get("/api?t=caps&apikey=secret").bodyAsText()
+        assertTrue(caps, caps.contains("id=\"6000\""))
     }
 
     @Test

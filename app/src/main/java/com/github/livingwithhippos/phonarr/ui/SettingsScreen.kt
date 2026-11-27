@@ -107,6 +107,7 @@ fun SettingsScreen(vm: MainViewModel) {
             onSetThemeColor = vm::setThemeColor,
             onSetStandardFont = vm::setStandardFont,
             onSetDetailedResults = vm::setDetailedResults,
+            onSetHideAdult = vm::setHideAdult,
             onSetDohEnabled = vm::setDohEnabled,
             onSetDohProvider = vm::setDohProvider,
             onSetDohCustomUrl = vm::setDohCustomUrl,
@@ -128,6 +129,7 @@ data class SettingsActions(
     val onSetThemeColor: (ThemeColor) -> Unit = {},
     val onSetStandardFont: (Boolean) -> Unit = {},
     val onSetDetailedResults: (Boolean) -> Unit = {},
+    val onSetHideAdult: (Boolean) -> Unit = {},
     val onSetDohEnabled: (Boolean) -> Unit = {},
     val onSetDohProvider: (DohProvider) -> Unit = {},
     val onSetDohCustomUrl: (String) -> Unit = {},
@@ -194,6 +196,25 @@ internal fun SettingsContent(
                     onCheckedChange = null,
                     modifier = Modifier.padding(start = 12.dp)
                 )
+            }
+        }
+        OutlinedCard(Modifier.fillMaxWidth()) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .toggleable(value = settings.hideAdult, onValueChange = actions.onSetHideAdult, role = Role.Switch)
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Hide adult content", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Removes results in XXX categories from searches here and from what the server sends " +
+                            "to other apps. Sites that are only adult return nothing.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Switch(checked = settings.hideAdult, onCheckedChange = null, modifier = Modifier.padding(start = 12.dp))
             }
         }
         OutlinedCard(Modifier.fillMaxWidth()) {

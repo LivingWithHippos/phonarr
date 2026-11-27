@@ -280,6 +280,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setDetailedResults(enabled: Boolean) =
         container.settings.update { it.copy(detailedResults = enabled) }
 
+    fun setHideAdult(enabled: Boolean) = container.settings.update { it.copy(hideAdult = enabled) }
+
     /** The result shown on the detail screen, or null for the result list. */
     private val _selectedRelease = MutableStateFlow<ReleaseInfo?>(null)
     val selectedRelease: StateFlow<ReleaseInfo?> = _selectedRelease.asStateFlow()

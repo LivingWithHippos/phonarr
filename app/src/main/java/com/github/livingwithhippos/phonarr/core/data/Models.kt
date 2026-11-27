@@ -33,6 +33,8 @@ data class AppSettings(
     val standardFont: Boolean = false,
     /** search results as cards that open a detail screen, instead of plain rows that open the link */
     val detailedResults: Boolean = true,
+    /** drop results in XXX categories, in the app and from the server */
+    val hideAdult: Boolean = false,
 )
 
 @Serializable
