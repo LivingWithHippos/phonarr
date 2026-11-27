@@ -1,8 +1,19 @@
 # Phonarr
 
 A partial android reimplementation of [Prowlarr](https://github.com/prowlarr/prowlarr).
+It supports both directly searching from the app and querying from any software which supports Prowlarr/Torznab, including [nullseek](https://github.com/LivingWithHippos/phonarr).
 
-## Using it
+Friday project: this project has been implemented by AI under human supervision.
+
+| Server                                                                                                              | Indexers                                                                                                       | Search                                                                                                       |
+|-------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/server.jpg" alt="Server Screen"> | <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/indexers.jpg" alt="Indexers Screen"> | <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/search.jpg" alt="Search Screen"> |
+
+| Settings - Dark                                                                                                              | Settings - Light                                                                                                       |
+|-------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/settings-dark.jpg" alt="Settings Dark Screen"> | <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/settings-light.jpg" alt="Settings - Light Screen"> |
+
+## How to use
 
 1. Open the app. On first launch download the definitions (Server tab → *Update definitions*).
 2. Indexers tab → *Add indexer*, pick a site, *Save and test*.
@@ -20,20 +31,15 @@ same API key (`X-Api-Key` header or `apikey` parameter). Supported endpoints:
 - `GET /api/v1/system/status`
 - `GET /api/v1/search?query=...&type=search` (also `indexerIds`, `categories`, `limit`, `offset`;
   Prowlarr's `{Season:1}`-style tokens work in `query` for tvsearch, movie, music and book searches)
+- `GET /api/v1/indexer/{id}/categories`
 
-## How it is built
+## Install
 
-| Area | Code |
-| --- | --- |
-| Cardigann engine (port of Prowlarr's C#) | `core/cardigann/` |
-| Torznab caps, categories, XML | `core/torznab/` |
-| Definitions download, saved indexers, search | `core/data/` |
-| HTTP server (Ktor CIO) | `core/server/TorznabServer.kt` |
-| Foreground service | `service/ServerService.kt` |
-| Compose UI | `ui/` |
+For now only available on the [release section of GitHub](https://github.com/LivingWithHippos/webble/releases).
 
-Definitions come from `https://indexers.prowlarr.com/master/12/package.zip`, the same source
-and schema version Prowlarr uses.
+To get updates automatically, add it to [Obtainium](https://github.com/ImranR98/Obtainium):
+
+[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="100">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/LivingWithHippos/phonarr)
 
 ## Not supported yet
 
@@ -43,11 +49,18 @@ Form, cookie, post, get and one-url logins work.
 
 ## Cloudflare and DDoS-Guard
 
-When a site answers with an anti-bot page, Phonarr (`browser/`):
-
-1. loads the site in a hidden WebView using the same user agent as its HTTP client, and reuses the cookies it gets;
-2. if the site still refuses the HTTP client (some sites check the TLS fingerprint), loads its pages through the WebView from then on;
-3. if the hidden WebView can't pass the check (e.g. an interactive Turnstile), shows a notification and a
+- when a site answers with an anti-bot page, Phonarr loads the site in a hidden WebView using the same user agent as its HTTP client, 
+and reuses the cookies it gets.
+- if the site still refuses the HTTP client (some sites check the TLS fingerprint), loads its pages through the WebView from then on.
+- if the hidden WebView can't pass the check (e.g. an interactive Turnstile), shows a notification and a
    "Pass site check" button that open the site in a visible browser; once you pass it, the cookies are reused.
 
-Torrent files can't be read back from a WebView, so on sites that need step 2, `.torrent` downloads may still fail (magnets work).
+Torrent files can't be read back from a WebView, so on some sites downloads may still fail (magnets work).
+
+## Donate :coffee:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E1E412NFX7)
+
+## Credits
+
+Vectors and icons by [SVG Repo](https://www.svgrepo.com/svg/252900/tiger)

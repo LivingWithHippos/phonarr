@@ -20,7 +20,61 @@ data class AppSettings(
     val lastDefinitionsUpdate: Long = 0,
     /** where the indexer screen's "Open site" button opens the site */
     val openSiteIn: SiteBrowser = SiteBrowser.InApp,
+    /** resolve site names with DNS over HTTPS instead of the network's DNS */
+    val dohEnabled: Boolean = false,
+    val dohProvider: DohProvider = DohProvider.Cloudflare,
+    /** endpoint used when [dohProvider] is [DohProvider.Custom] */
+    val dohCustomUrl: String = "",
+    /** listen on every network interface (0.0.0.0) instead of only this phone (127.0.0.1) */
+    val listenOnNetwork: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themeColor: ThemeColor = ThemeColor.SYSTEM,
+    /** use the system font instead of monospace */
+    val standardFont: Boolean = false,
+    /** search results as cards that open a detail screen, instead of plain rows that open the link */
+    val detailedResults: Boolean = true,
+    /** drop results in XXX categories, in the app and from the server */
+    val hideAdult: Boolean = false,
 )
+
+@Serializable
+enum class ThemeMode { SYSTEM, LIGHT, DARK, AMOLED }
+
+/** SYSTEM uses the wallpaper's colors (Material You). */
+@Serializable
+enum class ThemeColor { SYSTEM, PURPLE, BLUE, TEAL, GREEN, ORANGE, RED }
+
+/** The address the server binds to. */
+val AppSettings.listenHost: String get() = if (listenOnNetwork) "0.0.0.0" else "127.0.0.1"
+
+/** DNS over HTTPS providers. [bootstrap] are the provider's IPs, so its own name needs no DNS lookup. */
+@Serializable
+enum class DohProvider(val label: String, val url: String?, val bootstrap: List<String>) {
+    Cloudflare(
+        "Cloudflare",
+        "https://cloudflare-dns.com/dns-query",
+        listOf("1.1.1.1", "1.0.0.1", "2606:4700:4700::1111")
+    ),
+    Google(
+        "Google",
+        "https://dns.google/dns-query",
+        listOf("8.8.8.8", "8.8.4.4", "2001:4860:4860::8888")
+    ),
+    Quad9(
+        "Quad9",
+        "https://dns.quad9.net/dns-query",
+        listOf("9.9.9.9", "149.112.112.112", "2620:fe::fe")
+    ),
+    AdGuard(
+        "AdGuard",
+        "https://dns.adguard-dns.com/dns-query",
+        listOf("94.140.14.14", "94.140.15.15", "2a10:50c0::ad1:ff")
+    ),
+    Mullvad("Mullvad", "https://dns.mullvad.net/dns-query", listOf("194.242.2.2", "2a07:e340::2")),
+
+    /** the user's own endpoint; its host is looked up with the system DNS */
+    Custom("Custom", null, emptyList()),
+}
 
 @Serializable
 enum class SiteBrowser {

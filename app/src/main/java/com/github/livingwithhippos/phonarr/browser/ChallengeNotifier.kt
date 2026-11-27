@@ -24,13 +24,22 @@ class ChallengeNotifier(context: Context) {
             if (now - (lastShown[host] ?: 0) < THROTTLE_MS) return
             lastShown[host] = now
         }
-        if (ContextCompat.checkSelfPermission(appContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        if (ContextCompat.checkSelfPermission(
+                appContext,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return
 
         val manager = appContext.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, appContext.getString(R.string.challenge_channel), NotificationManager.IMPORTANCE_DEFAULT),
+            NotificationChannel(
+                CHANNEL_ID,
+                appContext.getString(R.string.challenge_channel),
+                NotificationManager.IMPORTANCE_DEFAULT
+            ),
         )
-        val origin = runCatching { URI(url).let { "${it.scheme}://${it.authority}/" } }.getOrDefault(url)
+        val origin =
+            runCatching { URI(url).let { "${it.scheme}://${it.authority}/" } }.getOrDefault(url)
         val open = PendingIntent.getActivity(
             appContext, host.hashCode(), ChallengeActivity.intent(appContext, origin),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,

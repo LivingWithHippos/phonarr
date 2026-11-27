@@ -10,3 +10,7 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+# Ktor's IntelliJ debugger detector uses JVM-only java.lang.management classes, absent on Android.
+# It's only called when running under an IDE debugger on the JVM, so the references are safe to drop.
+-dontwarn java.lang.management.ManagementFactory
+-dontwarn java.lang.management.RuntimeMXBean

@@ -18,9 +18,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,18 +29,14 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -65,6 +61,10 @@ import com.github.livingwithhippos.phonarr.core.cardigann.CardigannDefinition
 import com.github.livingwithhippos.phonarr.core.cardigann.CardigannIndexer
 import com.github.livingwithhippos.phonarr.core.data.IndexerConfig
 import com.github.livingwithhippos.phonarr.core.data.SiteBrowser
+import com.github.livingwithhippos.phonarr.ui.theme.Button
+import com.github.livingwithhippos.phonarr.ui.theme.FilterChip
+import com.github.livingwithhippos.phonarr.ui.theme.OutlinedButton
+import com.github.livingwithhippos.phonarr.ui.theme.TextButton
 
 @Composable
 fun IndexerListScreen(vm: MainViewModel, onAdd: () -> Unit, onEdit: (IndexerConfig) -> Unit) {
@@ -82,21 +82,38 @@ fun IndexerListScreen(vm: MainViewModel, onAdd: () -> Unit, onEdit: (IndexerConf
         }
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp, 16.dp, 16.dp, 96.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                16.dp,
+                16.dp,
+                16.dp,
+                96.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(indexers, key = { it.id }) { idx ->
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                OutlinedCard(Modifier.fillMaxWidth()) {
+                    Column(
+                        Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text("#${idx.id}  ${idx.name}", style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    "#${idx.id}  ${idx.name}",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
                                 Text(idx.definitionId, style = MaterialTheme.typography.bodySmall)
                             }
-                            Switch(checked = idx.enabled, onCheckedChange = { vm.setEnabled(idx, it) })
+                            Switch(
+                                checked = idx.enabled,
+                                onCheckedChange = { vm.setEnabled(idx, it) })
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (idx.id in testing) CircularProgressIndicator(Modifier.size(24.dp).padding(2.dp))
+                            if (idx.id in testing) CircularProgressIndicator(
+                                Modifier
+                                    .size(24.dp)
+                                    .padding(2.dp)
+                            )
                             else TextButton(onClick = { vm.testIndexer(idx) }) { Text("Test") }
                             TextButton(onClick = { onEdit(idx) }) { Text("Edit") }
                             TextButton(onClick = {
@@ -110,7 +127,14 @@ fun IndexerListScreen(vm: MainViewModel, onAdd: () -> Unit, onEdit: (IndexerConf
                                 color = MaterialTheme.colorScheme.error,
                                 style = MaterialTheme.typography.bodySmall,
                             )
-                            OutlinedButton(onClick = { context.startActivity(ChallengeActivity.intent(context, url)) }) {
+                            OutlinedButton(onClick = {
+                                context.startActivity(
+                                    ChallengeActivity.intent(
+                                        context,
+                                        url
+                                    )
+                                )
+                            }) {
                                 Text("Pass site check")
                             }
                         }
@@ -120,7 +144,9 @@ fun IndexerListScreen(vm: MainViewModel, onAdd: () -> Unit, onEdit: (IndexerConf
         }
         ExtendedFloatingActionButton(
             onClick = onAdd,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
         ) { Text("Add indexer") }
     }
 
@@ -129,7 +155,11 @@ fun IndexerListScreen(vm: MainViewModel, onAdd: () -> Unit, onEdit: (IndexerConf
             onDismissRequest = { toDelete = null },
             title = { Text("Delete ${idx.name}?") },
             text = { Text("Its settings will be removed from this device.") },
-            confirmButton = { TextButton(onClick = { vm.deleteIndexer(idx); toDelete = null }) { Text("Delete") } },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.deleteIndexer(idx); toDelete = null
+                }) { Text("Delete") }
+            },
             dismissButton = { TextButton(onClick = { toDelete = null }) { Text("Cancel") } },
         )
     }
@@ -147,14 +177,19 @@ fun DefinitionPickerScreen(vm: MainViewModel, onPick: (String) -> Unit, onBack: 
     val filtered = remember(defs, query, publicOnly, privateOnly, supportedOnly) {
         defs.filter {
             (!publicOnly || it.type == "public") &&
-                (!privateOnly || it.type == "private") &&
-                (!supportedOnly || it.unsupportedReason == null) &&
-                (query.isBlank() || it.name.contains(query, true) || it.id.contains(query, true) ||
-                    it.description?.contains(query, true) == true)
+                    (!privateOnly || it.type == "private") &&
+                    (!supportedOnly || it.unsupportedReason == null) &&
+                    (query.isBlank() || it.name.contains(query, true) || it.id.contains(
+                        query,
+                        true
+                    ) ||
+                            it.description?.contains(query, true) == true)
         }
     }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+    Column(Modifier
+        .fillMaxSize()
+        .padding(horizontal = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onBack) { Text("Back") }
             Text("Pick a site (${filtered.size})", style = MaterialTheme.typography.titleMedium)
@@ -165,26 +200,53 @@ fun DefinitionPickerScreen(vm: MainViewModel, onPick: (String) -> Unit, onBack: 
         )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // public and private exclude each other: picking one clears the other
-            CheckFilterChip("Public only", publicOnly) { publicOnly = !publicOnly; if (publicOnly) privateOnly = false }
-            CheckFilterChip("Private only", privateOnly) { privateOnly = !privateOnly; if (privateOnly) publicOnly = false }
+            CheckFilterChip("Public only", publicOnly) {
+                publicOnly = !publicOnly; if (publicOnly) privateOnly = false
+            }
+            CheckFilterChip("Private only", privateOnly) {
+                privateOnly = !privateOnly; if (privateOnly) publicOnly = false
+            }
             CheckFilterChip("Supported only", supportedOnly) { supportedOnly = !supportedOnly }
         }
         if (defs.isEmpty()) {
-            Text(if (updating) "Downloading definitions…" else "No definitions yet: update them from the Server tab.", Modifier.padding(16.dp))
+            Text(
+                if (updating) "Downloading definitions…" else "No definitions yet: update them from the Server tab.",
+                Modifier.padding(16.dp)
+            )
         }
         LazyColumn(Modifier.fillMaxSize()) {
             items(filtered, key = { it.id }) { d ->
                 val enabled = d.unsupportedReason == null
                 Column(
-                    Modifier.fillMaxWidth().clickable(enabled = enabled) { onPick(d.id) }.padding(vertical = 10.dp),
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = enabled) { onPick(d.id) }
+                        .padding(vertical = 10.dp),
                 ) {
                     Text(d.name, style = MaterialTheme.typography.titleSmall)
                     Text(
-                        listOfNotNull(d.type, d.language, if (d.requiresLogin) "Login required" else null).joinToString(" · "),
+                        listOfNotNull(
+                            d.type,
+                            d.language,
+                            if (d.requiresLogin) "Login required" else null
+                        ).joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall,
                     )
-                    d.description?.let { Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis) }
-                    d.unsupportedReason?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                    d.description?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    d.unsupportedReason?.let {
+                        Text(
+                            it,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
                 HorizontalDivider()
             }
@@ -194,12 +256,20 @@ fun DefinitionPickerScreen(vm: MainViewModel, onPick: (String) -> Unit, onBack: 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IndexerEditScreen(vm: MainViewModel, definitionId: String, existing: IndexerConfig?, onDone: () -> Unit) {
+fun IndexerEditScreen(
+    vm: MainViewModel,
+    definitionId: String,
+    existing: IndexerConfig?,
+    onDone: () -> Unit
+) {
     var definition by remember { mutableStateOf<CardigannDefinition?>(null) }
     LaunchedEffect(definitionId) { definition = vm.loadDefinition(definitionId) }
     val def = definition
     if (def == null) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        Box(
+            Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) { CircularProgressIndicator() }
         return
     }
 
@@ -224,18 +294,34 @@ fun IndexerEditScreen(vm: MainViewModel, definitionId: String, existing: Indexer
     )
 
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(def.name, style = MaterialTheme.typography.headlineSmall)
         def.description?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-        CardigannIndexer.unsupportedReason(def)?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        CardigannIndexer.unsupportedReason(def)
+            ?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
-        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
         Dropdown("Site URL", def.links.map { it to it }, baseUrl) { baseUrl = it }
         OutlinedButton(onClick = {
             when (appSettings.openSiteIn) {
-                SiteBrowser.InApp -> context.startActivity(ChallengeActivity.intent(context, baseUrl))
+                SiteBrowser.InApp -> context.startActivity(
+                    ChallengeActivity.intent(
+                        context,
+                        baseUrl
+                    )
+                )
+
                 SiteBrowser.External -> try {
                     context.startActivity(Intent(Intent.ACTION_VIEW, baseUrl.toUri()))
                 } catch (e: ActivityNotFoundException) {
@@ -253,12 +339,14 @@ fun IndexerEditScreen(vm: MainViewModel, definitionId: String, existing: Indexer
                     value = values[s.name] ?: "", onValueChange = { values[s.name] = it },
                     label = { Text(label) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                 )
+
                 "password" -> OutlinedTextField(
                     value = values[s.name] ?: "", onValueChange = { values[s.name] = it },
                     label = { Text(label) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 )
+
                 "checkbox" -> Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(label, Modifier.weight(1f))
                     Switch(
@@ -266,37 +354,63 @@ fun IndexerEditScreen(vm: MainViewModel, definitionId: String, existing: Indexer
                         onCheckedChange = { values[s.name] = it.toString() },
                     )
                 }
-                "select" -> Dropdown(label, s.options.orEmpty().map { it.first to (it.second ?: it.first) }, values[s.name] ?: s.default ?: "") {
+
+                "select" -> Dropdown(
+                    label,
+                    s.options.orEmpty().map { it.first to (it.second ?: it.first) },
+                    values[s.name] ?: s.default ?: ""
+                ) {
                     values[s.name] = it
                 }
+
                 "info", "info_cookie", "info_useragent", "info_category_8000" -> s.default?.let { html ->
                     Text(
-                        HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT).toString().trim(),
+                        HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_COMPACT).toString()
+                            .trim(),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+
                 "info_flaresolverr" -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     val inApp = appSettings.openSiteIn == SiteBrowser.InApp
                     Text(
                         "This site may use Cloudflare protection. Phonarr passes it in a hidden browser; if that fails, " +
-                            (if (inApp) "use Open site above" else "open the site in Phonarr") + " and complete the check.",
+                                (if (inApp) "use Open site above" else "open the site in Phonarr") + " and complete the check.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     // the installed browser's cookies can't be reused, so the check must be passed in the app
                     if (!inApp) {
-                        OutlinedButton(onClick = { context.startActivity(ChallengeActivity.intent(context, baseUrl)) }) {
+                        OutlinedButton(onClick = {
+                            context.startActivity(
+                                ChallengeActivity.intent(
+                                    context,
+                                    baseUrl
+                                )
+                            )
+                        }) {
                             Text("Pass site check")
                         }
                     }
                 }
+
                 else -> {}
             }
         }
 
         Spacer(Modifier.size(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { vm.saveIndexer(config(), test = true); onDone() }) { Text("Save and test") }
-            OutlinedButton(onClick = { vm.saveIndexer(config(), test = false); onDone() }) { Text("Save") }
+            Button(onClick = {
+                vm.saveIndexer(
+                    config(),
+                    test = true
+                ); onDone()
+            }) { Text("Save and test") }
+            OutlinedButton(onClick = {
+                vm.saveIndexer(
+                    config(),
+                    test = false
+                ); onDone()
+            }) { Text("Save") }
             TextButton(onClick = onDone) { Text("Cancel") }
         }
     }
@@ -311,7 +425,13 @@ private fun CheckFilterChip(label: String, selected: Boolean, onClick: () -> Uni
         onClick = onClick,
         label = { Text(label) },
         leadingIcon = if (selected) {
-            { Icon(Icons.Filled.Done, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+            {
+                Icon(
+                    Icons.Filled.Done,
+                    contentDescription = null,
+                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                )
+            }
         } else {
             null
         },
@@ -319,7 +439,12 @@ private fun CheckFilterChip(label: String, selected: Boolean, onClick: () -> Uni
 }
 
 @Composable
-private fun Dropdown(label: String, options: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit) {
+private fun Dropdown(
+    label: String,
+    options: List<Pair<String, String>>,
+    selected: String,
+    onSelect: (String) -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
@@ -328,11 +453,15 @@ private fun Dropdown(label: String, options: List<Pair<String, String>>, selecte
             readOnly = true,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { (key, text) ->
-                DropdownMenuItem(text = { Text(text) }, onClick = { onSelect(key); expanded = false })
+                DropdownMenuItem(
+                    text = { Text(text) },
+                    onClick = { onSelect(key); expanded = false })
             }
         }
     }

@@ -69,7 +69,8 @@ class WebViewChallengeSolver(
                         // two clean polls in a row: the check's redirect has settled
                         if (cleanPolls >= 2) {
                             CookieManager.getInstance().flush()
-                            val content = BrowserPages.content(webView) ?: return@withTimeoutOrNull null
+                            val content =
+                                BrowserPages.content(webView) ?: return@withTimeoutOrNull null
                             return@withTimeoutOrNull BrowserPage(webView.url ?: url, content)
                         }
                     }

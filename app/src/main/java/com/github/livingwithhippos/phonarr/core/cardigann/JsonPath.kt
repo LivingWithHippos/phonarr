@@ -31,20 +31,29 @@ object JsonPath {
         }
         while (i < p.length) {
             when (val c = p[i]) {
-                '.' -> { flush(); i++ }
+                '.' -> {
+                    flush(); i++
+                }
+
                 '[' -> {
                     flush()
                     val end = p.indexOf(']', i)
                     require(end > i) { "Unclosed [ in JSON path $path" }
                     val inner = p.substring(i + 1, end).trim()
-                    if ((inner.startsWith("'") && inner.endsWith("'")) || (inner.startsWith("\"") && inner.endsWith("\""))) {
+                    if ((inner.startsWith("'") && inner.endsWith("'")) || (inner.startsWith("\"") && inner.endsWith(
+                            "\""
+                        ))
+                    ) {
                         steps += Step.Prop(inner.substring(1, inner.length - 1))
                     } else {
                         steps += Step.Index(inner.toInt())
                     }
                     i = end + 1
                 }
-                else -> { sb.append(c); i++ }
+
+                else -> {
+                    sb.append(c); i++
+                }
             }
         }
         flush()
@@ -67,7 +76,9 @@ object JsonPath {
     /** Equivalent of Newtonsoft's token.Value<string>(); booleans become "True"/"False" like .NET. */
     fun asString(e: JsonElement?): String? = when (e) {
         null, JsonNull -> null
-        is JsonPrimitive -> if (e.isString) e.content else e.booleanOrNull?.let { if (it) "True" else "False" } ?: e.content
+        is JsonPrimitive -> if (e.isString) e.content else e.booleanOrNull?.let { if (it) "True" else "False" }
+            ?: e.content
+
         else -> e.toString()
     }
 }

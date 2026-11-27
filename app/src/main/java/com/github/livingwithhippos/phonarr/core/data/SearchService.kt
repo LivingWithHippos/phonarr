@@ -1,5 +1,6 @@
 package com.github.livingwithhippos.phonarr.core.data
 
+import com.github.livingwithhippos.phonarr.core.torznab.isAdult
 import com.github.livingwithhippos.phonarr.core.cardigann.CardigannIndexer
 import com.github.livingwithhippos.phonarr.core.cardigann.DownloadResult
 import com.github.livingwithhippos.phonarr.core.torznab.IndexerCapabilities
@@ -21,10 +22,17 @@ class IndexerNotFoundException(id: String) : Exception("Indexer $id not found or
 internal inline fun <T> guarded(block: () -> T): T = try {
     block()
 } catch (e: LinkageError) {
-    throw IllegalStateException("Internal error: ${e.cause?.message ?: e.message ?: e::class.simpleName}", e)
+    throw IllegalStateException(
+        "Internal error: ${e.cause?.message ?: e.message ?: e::class.simpleName}",
+        e
+    )
 }
 
-data class SearchOutcome(val releases: List<ReleaseInfo>, val errors: Map<String, String>, val searched: Int = 0) {
+data class SearchOutcome(
+    val releases: List<ReleaseInfo>,
+    val errors: Map<String, String>,
+    val searched: Int = 0
+) {
     /** Every searched indexer failed (as opposed to finding nothing). */
     val allFailed: Boolean get() = searched > 0 && errors.size >= searched
 }
@@ -37,13 +45,24 @@ class SearchService(
     private val timeoutMs: Long = 90_000,
     private val userAgent: String = com.github.livingwithhippos.phonarr.core.cardigann.IndexerHttp.DEFAULT_USER_AGENT,
     private val solver: com.github.livingwithhippos.phonarr.core.cardigann.ChallengeSolver? = null,
+    /** read on every search, so the setting applies without restarting the server */
+    private val hideAdult: () -> Boolean = { false },
 ) {
     private val instances = HashMap<Int, Pair<IndexerConfig, CardigannIndexer>>()
 
     @Synchronized
     fun instance(config: IndexerConfig): CardigannIndexer {
         instances[config.id]?.let { (cfg, idx) -> if (cfg == config) return idx }
-        val idx = guarded { CardigannIndexer(definitions.get(config.definitionId), config.settings, client, config.baseUrl, userAgent, solver) }
+        val idx = guarded {
+            CardigannIndexer(
+                definitions.get(config.definitionId),
+                config.settings,
+                client,
+                config.baseUrl,
+                userAgent,
+                solver
+            )
+        }
         instances[config.id] = config to idx
         return idx
     }
@@ -72,7 +91,8 @@ class SearchService(
         return IndexerCapabilities.merge(configs.mapNotNull { runCatching { instance(it).capabilities }.getOrNull() })
     }
 
-    suspend fun search(id: String, query: SearchQuery): SearchOutcome = searchConfigs(resolve(id), query)
+    suspend fun search(id: String, query: SearchQuery): SearchOutcome =
+        searchConfigs(resolve(id), query)
 
     /**
      * Searches the given enabled indexers, or all of them when [ids] is null or empty
@@ -83,12 +103,17 @@ class SearchService(
         val configs = if (ids.isNullOrEmpty()) {
             enabled
         } else {
-            ids.distinct().map { n -> enabled.firstOrNull { it.id == n } ?: throw IndexerNotFoundException(n.toString()) }
+            ids.distinct().map { n ->
+                enabled.firstOrNull { it.id == n } ?: throw IndexerNotFoundException(n.toString())
+            }
         }
         return searchConfigs(configs, query)
     }
 
-    private suspend fun searchConfigs(configs: List<IndexerConfig>, query: SearchQuery): SearchOutcome = coroutineScope {
+    private suspend fun searchConfigs(
+        configs: List<IndexerConfig>,
+        query: SearchQuery
+    ): SearchOutcome = coroutineScope {
         val results = configs.map { config ->
             async {
                 try {
@@ -108,17 +133,22 @@ class SearchService(
         }.awaitAll()
 
         var releases = results.flatMap { it.second.getOrNull().orEmpty() }
+        if (hideAdult()) releases = releases.filterNot { it.isAdult() }
         // filter by requested categories when the indexer returned category info
         if (query.categories.isNotEmpty()) {
-            val wanted = query.categories.flatMap { c -> listOf(c) + if (c % 1000 == 0) (c + 1..c + 999).toList() else emptyList() }.toSet()
-            releases = releases.filter { r -> r.categories.isEmpty() || r.categories.any { it.id in wanted } }
+            val wanted =
+                query.categories.flatMap { c -> listOf(c) + if (c % 1000 == 0) (c + 1..c + 999).toList() else emptyList() }
+                    .toSet()
+            releases =
+                releases.filter { r -> r.categories.isEmpty() || r.categories.any { it.id in wanted } }
         }
         releases = releases.sortedByDescending { it.publishDate?.toEpochSecond() ?: 0 }
         val offset = query.offset ?: 0
         val limit = query.limit ?: Int.MAX_VALUE
         SearchOutcome(
             releases.drop(offset).take(limit),
-            results.filter { it.second.isFailure }.associate { it.first to (it.second.exceptionOrNull()?.message ?: "error") },
+            results.filter { it.second.isFailure }
+                .associate { it.first to (it.second.exceptionOrNull()?.message ?: "error") },
             searched = configs.size,
         )
     }
@@ -131,7 +161,16 @@ class SearchService(
     /** Runs an empty search to check the indexer works. Returns the number of results. */
     suspend fun test(config: IndexerConfig): Int {
         forget(config.id)
-        val idx = guarded { CardigannIndexer(definitions.get(config.definitionId), config.settings, client, config.baseUrl, userAgent, solver) }
+        val idx = guarded {
+            CardigannIndexer(
+                definitions.get(config.definitionId),
+                config.settings,
+                client,
+                config.baseUrl,
+                userAgent,
+                solver
+            )
+        }
         return withTimeout(timeoutMs) { guarded { idx.search(SearchQuery()) } }.size
     }
 }

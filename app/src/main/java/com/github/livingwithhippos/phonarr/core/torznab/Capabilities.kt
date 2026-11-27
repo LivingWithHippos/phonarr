@@ -32,16 +32,28 @@ class IndexerCapabilities {
                     }
                     searchParams += "q"
                 }
+
                 "tv-search" -> addParams(tvSearchParams, params, TV_PARAMS, mode)
                 "movie-search" -> addParams(movieSearchParams, params, MOVIE_PARAMS, mode)
-                "music-search", "audio-search" -> addParams(musicSearchParams, params, MUSIC_PARAMS, mode)
+                "music-search", "audio-search" -> addParams(
+                    musicSearchParams,
+                    params,
+                    MUSIC_PARAMS,
+                    mode
+                )
+
                 "book-search" -> addParams(bookSearchParams, params, BOOK_PARAMS, mode)
                 else -> throw IllegalArgumentException("Unsupported search mode: $mode")
             }
         }
     }
 
-    private fun addParams(target: MutableList<String>, params: List<String>, allowed: List<String>, mode: String) {
+    private fun addParams(
+        target: MutableList<String>,
+        params: List<String>,
+        allowed: List<String>,
+        mode: String
+    ) {
         for (p in params) {
             val lower = p.lowercase()
             require(lower in allowed) { "Not supported $mode param: $p" }
@@ -53,7 +65,8 @@ class IndexerCapabilities {
     private fun supported(params: List<String>, order: List<String>): String =
         (listOf("q") + order.filter { it != "q" && it in params }).joinToString(",")
 
-    fun toXml(serverTitle: String = "Phonarr"): String {
+    /** [hideAdult] leaves the XXX categories out, so clients don't offer them. */
+    fun toXml(serverTitle: String = "Phonarr", hideAdult: Boolean = false): String {
         val sb = StringBuilder()
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<caps>\n")
         sb.append("  <server title=\"").append(Xml.escape(serverTitle)).append("\" />\n")
@@ -66,7 +79,8 @@ class IndexerCapabilities {
         sb.append("  <searching>\n")
         fun mode(name: String, params: List<String>, order: List<String>) {
             sb.append("    <").append(name)
-                .append(" available=\"").append(if (params.isNotEmpty()) "yes" else "no").append('"')
+                .append(" available=\"").append(if (params.isNotEmpty()) "yes" else "no")
+                .append('"')
                 .append(" supportedParams=\"").append(supported(params, order)).append('"')
             if (supportsRawSearch) sb.append(" searchEngine=\"raw\"")
             sb.append(" />\n")
@@ -79,13 +93,16 @@ class IndexerCapabilities {
         mode("book-search", bookSearchParams, BOOK_PARAMS)
         sb.append("  </searching>\n  <categories>\n")
         for (c in categories.getTorznabCategoryTree(sorted = true)) {
-            sb.append("    <category id=\"").append(c.id).append("\" name=\"").append(Xml.escape(c.name)).append('"')
+            if (hideAdult && c.isAdult()) continue
+            sb.append("    <category id=\"").append(c.id).append("\" name=\"")
+                .append(Xml.escape(c.name)).append('"')
             if (c.subCategories.isEmpty()) {
                 sb.append(" />\n")
             } else {
                 sb.append(">\n")
                 for (s in c.subCategories) {
-                    sb.append("      <subcat id=\"").append(s.id).append("\" name=\"").append(Xml.escape(s.name)).append("\" />\n")
+                    sb.append("      <subcat id=\"").append(s.id).append("\" name=\"")
+                        .append(Xml.escape(s.name)).append("\" />\n")
                 }
                 sb.append("    </category>\n")
             }
@@ -95,8 +112,31 @@ class IndexerCapabilities {
     }
 
     companion object {
-        val TV_PARAMS = listOf("q", "season", "ep", "imdbid", "tvdbid", "rid", "tvmazeid", "traktid", "tmdbid", "doubanid", "genre", "year")
-        val MOVIE_PARAMS = listOf("q", "imdbid", "tmdbid", "imdbtitle", "imdbyear", "traktid", "genre", "doubanid", "year")
+        val TV_PARAMS = listOf(
+            "q",
+            "season",
+            "ep",
+            "imdbid",
+            "tvdbid",
+            "rid",
+            "tvmazeid",
+            "traktid",
+            "tmdbid",
+            "doubanid",
+            "genre",
+            "year"
+        )
+        val MOVIE_PARAMS = listOf(
+            "q",
+            "imdbid",
+            "tmdbid",
+            "imdbtitle",
+            "imdbyear",
+            "traktid",
+            "genre",
+            "doubanid",
+            "year"
+        )
         val MUSIC_PARAMS = listOf("q", "album", "artist", "label", "year", "genre", "track")
         val BOOK_PARAMS = listOf("q", "title", "author", "publisher", "genre", "year")
 
@@ -105,10 +145,14 @@ class IndexerCapabilities {
             val result = IndexerCapabilities()
             result.searchParams += "q"
             for (c in list) {
-                c.tvSearchParams.filter { it !in result.tvSearchParams }.forEach { result.tvSearchParams += it }
-                c.movieSearchParams.filter { it !in result.movieSearchParams }.forEach { result.movieSearchParams += it }
-                c.musicSearchParams.filter { it !in result.musicSearchParams }.forEach { result.musicSearchParams += it }
-                c.bookSearchParams.filter { it !in result.bookSearchParams }.forEach { result.bookSearchParams += it }
+                c.tvSearchParams.filter { it !in result.tvSearchParams }
+                    .forEach { result.tvSearchParams += it }
+                c.movieSearchParams.filter { it !in result.movieSearchParams }
+                    .forEach { result.movieSearchParams += it }
+                c.musicSearchParams.filter { it !in result.musicSearchParams }
+                    .forEach { result.musicSearchParams += it }
+                c.bookSearchParams.filter { it !in result.bookSearchParams }
+                    .forEach { result.bookSearchParams += it }
                 result.categories.concat(c.categories)
             }
             return result

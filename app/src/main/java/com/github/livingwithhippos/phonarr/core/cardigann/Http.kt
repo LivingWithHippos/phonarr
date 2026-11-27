@@ -42,8 +42,24 @@ class HttpResp(
 ) {
     val content: String by lazy { String(body, charset) }
     val isRedirect: Boolean get() = status in 300..399 && location != null
-    val location: String? get() = headers.entries.firstOrNull { it.key.equals("Location", true) }?.value?.firstOrNull()
-    val redirectUrl: String? get() = location?.let { runCatching { URI(url).resolve(it.replace(" ", "%20")).toString() }.getOrDefault(it) }
+    val location: String?
+        get() = headers.entries.firstOrNull {
+            it.key.equals(
+                "Location",
+                true
+            )
+        }?.value?.firstOrNull()
+    val redirectUrl: String?
+        get() = location?.let {
+            runCatching {
+                URI(url).resolve(
+                    it.replace(
+                        " ",
+                        "%20"
+                    )
+                ).toString()
+            }.getOrDefault(it)
+        }
 }
 
 class HttpException(message: String, val response: HttpResp? = null) : Exception(message)
@@ -77,7 +93,10 @@ class IndexerHttp(
         val resp = executeFollowing(req)
         val provider = Challenge.detect(resp) ?: return resp
         if (solver == null) {
-            throw ChallengeException("$provider protection blocked the request to ${host(req.url)}", req.url)
+            throw ChallengeException(
+                "$provider protection blocked the request to ${host(req.url)}",
+                req.url
+            )
         }
 
         // the user may have solved the check in the app already
@@ -102,7 +121,10 @@ class IndexerHttp(
             browserOnly = true
             return fetchWithBrowser(req)
         }
-        throw ChallengeException("$provider still blocks ${host(req.url)} after the browser check", req.url)
+        throw ChallengeException(
+            "$provider still blocks ${host(req.url)} after the browser check",
+            req.url
+        )
     }
 
     private fun canUseBrowser(req: HttpReq) = req.allowBrowser && !req.method.equals("POST", true)
@@ -115,7 +137,13 @@ class IndexerHttp(
                 req.url,
             )
         cookies.putAll(solver.cookies(req.url))
-        return HttpResp(page.url, 200, emptyMap(), page.content.toByteArray(req.charset), req.charset)
+        return HttpResp(
+            page.url,
+            200,
+            emptyMap(),
+            page.content.toByteArray(req.charset),
+            req.charset
+        )
     }
 
     private suspend fun waitForTurn() {
@@ -135,7 +163,8 @@ class IndexerHttp(
             if (!current.followRedirects || !resp.isRedirect) return resp
             val next = resp.redirectUrl!!
             if (!next.startsWith("http")) return resp // e.g. magnet: links
-            current = current.copy(url = next, method = "GET", form = emptyList(), referer = current.url)
+            current =
+                current.copy(url = next, method = "GET", form = emptyList(), referer = current.url)
         }
         throw HttpException("Too many redirects for ${req.url}")
     }
@@ -146,26 +175,53 @@ class IndexerHttp(
             url(req.url)
             method = if (req.method.equals("POST", true)) HttpMethod.Post else HttpMethod.Get
             header(HttpHeaders.UserAgent, userAgent)
-            header(HttpHeaders.Accept, "text/html,application/xhtml+xml,application/xml,application/json;q=0.9,*/*;q=0.8")
+            header(
+                HttpHeaders.Accept,
+                "text/html,application/xhtml+xml,application/xml,application/json;q=0.9,*/*;q=0.8"
+            )
             req.referer?.let { header(HttpHeaders.Referrer, it) }
-            if (cookies.isNotEmpty()) header(HttpHeaders.Cookie, cookies.entries.joinToString("; ") { "${it.key}=${it.value}" })
+            if (cookies.isNotEmpty()) header(
+                HttpHeaders.Cookie,
+                cookies.entries.joinToString("; ") { "${it.key}=${it.value}" })
             req.headers.forEach { (k, v) -> header(k, v) }
             if (method == HttpMethod.Post && req.multipart) {
-                setBody(MultiPartFormDataContent(formData { req.form.forEach { (k, v) -> append(k, v) } }))
+                setBody(MultiPartFormDataContent(formData {
+                    req.form.forEach { (k, v) ->
+                        append(
+                            k,
+                            v
+                        )
+                    }
+                }))
             } else if (method == HttpMethod.Post) {
                 val body = req.form.joinToString("&") { (k, v) ->
                     Filters.urlEncode(k, req.charset) + "=" + Filters.urlEncode(v, req.charset)
                 }
-                setBody(TextContent(body, ContentType.Application.FormUrlEncoded.withParameter("charset", req.charset.name())))
+                setBody(
+                    TextContent(
+                        body,
+                        ContentType.Application.FormUrlEncoded.withParameter(
+                            "charset",
+                            req.charset.name()
+                        )
+                    )
+                )
             }
         }
         response.headers.getAll(HttpHeaders.SetCookie)?.forEach { raw ->
             runCatching { parseServerSetCookieHeader(raw) }.getOrNull()?.let { c ->
-                if (c.value.isEmpty() || c.value == "deleted") cookies.remove(c.name) else cookies[c.name] = c.value
+                if (c.value.isEmpty() || c.value == "deleted") cookies.remove(c.name) else cookies[c.name] =
+                    c.value
             }
         }
         val headers = response.headers.entries().associate { it.key to it.value }
-        return HttpResp(req.url, response.status.value, headers, response.bodyAsBytes(), req.charset)
+        return HttpResp(
+            req.url,
+            response.status.value,
+            headers,
+            response.bodyAsBytes(),
+            req.charset
+        )
     }
 
     companion object {

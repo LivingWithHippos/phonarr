@@ -9,6 +9,7 @@ import com.github.livingwithhippos.phonarr.core.server.ServerInfo
 import com.github.livingwithhippos.phonarr.core.server.TorznabServer
 import com.github.livingwithhippos.phonarr.core.torznab.SearchQuery
 import com.github.livingwithhippos.phonarr.core.torznab.SearchType
+import com.github.livingwithhippos.phonarr.core.util.Log
 import io.ktor.client.request.header
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -40,17 +41,91 @@ class TorznabServerTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
-    private fun server(): TorznabServer {
+    /** [adultTv] maps the test site's TV category to XXX, so its "Some Show" row counts as adult. */
+    private fun server(logRequests: Boolean = false, hideAdult: Boolean = false, adultTv: Boolean = false): TorznabServer {
         val dir = tmp.newFolder()
         val defs = File(dir, "Definitions").apply { mkdirs() }
-        File(defs, "testsite.yml").writeText(resource("testsite.yml"))
+        val yaml = resource("testsite.yml").let { if (adultTv) it.replace("cat: TV/HD", "cat: XXX/x264") else it }
+        File(defs, "testsite.yml").writeText(yaml)
         val client = HttpClient(MockEngine {
             respond(resource("testsite.html"), HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/html"))
         }) { followRedirects = false; expectSuccess = false }
         val indexers = IndexerRepository(dir)
         indexers.save(IndexerConfig(0, "testsite", "Test Site"))
-        val service = SearchService(indexers, DefinitionRepository(defs, client), client)
-        return TorznabServer(service, ServerInfo(appVersion = "1.0", osVersion = "16")) { "secret" }
+        val service = SearchService(indexers, DefinitionRepository(defs, client), client, hideAdult = { hideAdult })
+        return TorznabServer(
+            service, ServerInfo(appVersion = "1.0", osVersion = "16"), logRequests, hideAdult = { hideAdult },
+        ) { "secret" }
+    }
+
+    @Test
+    fun hidesAdultResultsAndCategories() = testApplication {
+        val s = server(hideAdult = true, adultTv = true)
+        application { with(s) { module() } }
+        val results = client.get("/api?t=search&apikey=secret").bodyAsText()
+        assertTrue(results, results.contains("The Matrix 1999 1080p"))
+        assertTrue(results, !results.contains("Some Show S01E01"))
+        val caps = client.get("/api?t=caps&apikey=secret").bodyAsText()
+        assertTrue(caps, !caps.contains("id=\"6000\""))
+        assertTrue(caps, caps.contains("id=\"2000\""))
+    }
+
+    @Test
+    fun keepsAdultResultsByDefault() = testApplication {
+        val s = server(adultTv = true)
+        application { with(s) { module() } }
+        val results = client.get("/api?t=search&apikey=secret").bodyAsText()
+        assertTrue(results, results.contains("Some Show S01E01"))
+        val caps = client.get("/api?t=caps&apikey=secret").bodyAsText()
+        assertTrue(caps, caps.contains("id=\"6000\""))
+    }
+
+    @Test
+    fun logsRequestsWithoutApiKey() = testApplication {
+        val logged = mutableListOf<String>()
+        val old = Log.sink
+        Log.sink = { _, msg, _ -> if (msg.startsWith("Server ")) synchronized(logged) { logged += msg } }
+        try {
+            val s = server(logRequests = true)
+            application { with(s) { module() } }
+            client.get("/1/api?t=caps&apikey=secret")
+            client.get("/1/api?apikey=wrong&t=caps")
+        } finally {
+            Log.sink = old
+        }
+        assertEquals(logged.toString(), 2, logged.size)
+        assertTrue(logged[0], logged[0].startsWith("Server GET /1/api?t=caps&apikey=REDACTED -> 200"))
+        assertTrue(logged[1], logged[1].startsWith("Server GET /1/api?apikey=REDACTED&t=caps -> 401"))
+        assertTrue(logged.none { "secret" in it || "wrong" in it })
+    }
+
+    @Test
+    fun noRequestLogsByDefault() = testApplication {
+        val logged = mutableListOf<String>()
+        val old = Log.sink
+        Log.sink = { _, msg, _ -> if (msg.startsWith("Server ")) synchronized(logged) { logged += msg } }
+        try {
+            val s = server()
+            application { with(s) { module() } }
+            client.get("/1/api?t=caps&apikey=secret")
+        } finally {
+            Log.sink = old
+        }
+        assertTrue(logged.toString(), logged.isEmpty())
+    }
+
+    @Test
+    fun bareApiServesAllIndexers() = testApplication {
+        val s = server()
+        application { with(s) { module() } }
+        val caps = client.get("/api?t=caps&apikey=secret")
+        assertEquals(HttpStatusCode.OK, caps.status)
+        assertTrue(caps.bodyAsText().contains("<caps>"))
+
+        val results = client.get("/api?t=search&q=matrix&apikey=secret").bodyAsText()
+        assertTrue(results, results.contains("<title>The Matrix 1999 1080p</title>"))
+
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api?t=caps&apikey=wrong").status)
     }
 
     @Test

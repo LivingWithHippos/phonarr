@@ -9,7 +9,8 @@ object ParseUtil {
 
     private val imdbIdRegex = Regex("^(?:tt)?(\\d{1,8})$")
 
-    private fun digitsOnly(s: String): String = s.filter { it.isDigit() || it == '.' || it == ',' }.trim()
+    private fun digitsOnly(s: String): String =
+        s.filter { it.isDigit() || it == '.' || it == ',' }.trim()
 
     fun coerceDouble(str: String?): Double {
         var v = digitsOnly(str ?: "")
@@ -72,7 +73,10 @@ object ParseUtil {
         return parseQuery(qs)[argument]?.firstOrNull()
     }
 
-    fun parseQuery(query: String, charset: Charset = StandardCharsets.UTF_8): Map<String, List<String>> {
+    fun parseQuery(
+        query: String,
+        charset: Charset = StandardCharsets.UTF_8
+    ): Map<String, List<String>> {
         val result = LinkedHashMap<String, MutableList<String>>()
         query.removePrefix("?").split("&").filter { it.isNotEmpty() }.forEach { pair ->
             val kv = pair.split("=", limit = 2)
