@@ -35,7 +35,7 @@ same API key (`X-Api-Key` header or `apikey` parameter). Supported endpoints:
 
 ## Install
 
-For now only available on the [release section of GitHub](https://github.com/LivingWithHippos/webble/releases).
+For now only available on the [release section of GitHub](https://github.com/LivingWithHippos/phonarr/releases).
 
 To get updates automatically, add it to [Obtainium](https://github.com/ImranR98/Obtainium):
 
