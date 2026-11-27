@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -131,7 +132,7 @@ internal fun ServerContent(
         OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Torznab server", style = MaterialTheme.typography.titleMedium)
+                    Text("Torznab server", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.weight(1f))
                     StatusChip(running)
                 }
@@ -196,7 +197,37 @@ internal fun ServerContent(
 
         OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Connect your apps", style = MaterialTheme.typography.titleMedium)
+                Text("Indexer definitions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                val last = settings.lastDefinitionsUpdate
+                Text(
+                    "$definitionsCount sites available" +
+                            if (last > 0) ", updated ${
+                                DateFormat.getDateTimeInstance(
+                                    DateFormat.SHORT,
+                                    DateFormat.SHORT
+                                ).format(Date(last))
+                            }" else "",
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = actions.onUpdateDefinitions,
+                        enabled = !updatingDefinitions
+                    ) { Text("Update definitions") }
+                    if (updatingDefinitions) CircularProgressIndicator(Modifier.padding(4.dp))
+                }
+                Text(
+                    "Definitions come from the Prowlarr indexers project. Updating takes several seconds.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+
+        OutlinedCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Connect your apps", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text("Add a Torznab indexer in your app with this URL and API key. Use \"all\" to search every enabled indexer, or an indexer number from the Indexers tab.")
                 Text("API key", style = MaterialTheme.typography.labelLarge)
                 Text(settings.apiKey, fontFamily = FontFamily.Monospace)
@@ -224,36 +255,6 @@ internal fun ServerContent(
                 Text(
                     "$enabledIndexers enabled indexers",
                     style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-
-        OutlinedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Indexer definitions", style = MaterialTheme.typography.titleMedium)
-                val last = settings.lastDefinitionsUpdate
-                Text(
-                    "$definitionsCount sites available" +
-                            if (last > 0) ", updated ${
-                                DateFormat.getDateTimeInstance(
-                                    DateFormat.SHORT,
-                                    DateFormat.SHORT
-                                ).format(Date(last))
-                            }" else "",
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = actions.onUpdateDefinitions,
-                        enabled = !updatingDefinitions
-                    ) { Text("Update definitions") }
-                    if (updatingDefinitions) CircularProgressIndicator(Modifier.padding(4.dp))
-                }
-                Text(
-                    "Definitions come from the Prowlarr indexers project. Updating takes several seconds.",
-                    style = MaterialTheme.typography.bodySmall,
                 )
             }
         }
