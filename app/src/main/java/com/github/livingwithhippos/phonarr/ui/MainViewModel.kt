@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.github.livingwithhippos.phonarr.core.cardigann.DownloadResult
+import java.io.File
 
 private const val DOH_TEST_HOST = "github.com"
 
@@ -253,11 +255,56 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      * The release's magnet link: the one from the results, one built from its info hash, or the
      * one its download link leads to (some sites only show it on the details page).
      */
-    suspend fun resolveMagnet(release: ReleaseInfo): String? {
-        release.magnetUrl?.let { return it }
-        release.infoHash?.takeIf { it.isNotBlank() }?.let {
-            return com.github.livingwithhippos.phonarr.core.util.Magnet.buildPublicMagnetLink(it, release.title)
+    fun setDetailedResults(enabled: Boolean) = container.settings.update { it.copy(detailedResults = enabled) }
+
+    /** The result shown on the detail screen, or null for the result list. */
+    private val _selectedRelease = MutableStateFlow<ReleaseInfo?>(null)
+    val selectedRelease: StateFlow<ReleaseInfo?> = _selectedRelease.asStateFlow()
+
+    fun openRelease(release: ReleaseInfo) { _selectedRelease.value = release }
+    fun closeRelease() { _selectedRelease.value = null }
+
+    /**
+     * The magnet or the .torrent file for [release]. A known magnet or info hash needs no network;
+     * otherwise, or with [preferMagnet] false, the download link is fetched with the indexer's cookies and login.
+     */
+    suspend fun fetchRelease(release: ReleaseInfo, preferMagnet: Boolean = true): ReleaseFile? = withContext(Dispatchers.IO) {
+        if (preferMagnet) knownMagnet(release)?.let { return@withContext ReleaseFile.Magnet(it) }
+        val link = release.downloadUrl ?: return@withContext null
+        if (link.startsWith("magnet:", ignoreCase = true)) return@withContext ReleaseFile.Magnet(link)
+        try {
+            when (val r = container.searchService.download(release.indexerId, link)) {
+                is DownloadResult.MagnetLink -> ReleaseFile.Magnet(r.uri)
+                is DownloadResult.Torrent -> {
+                    val name = torrentFileName(r.fileName, release.title)
+                    val dir = container.torrentsDir.apply { mkdirs() }
+                    val file = File(dir, name)
+                    file.writeBytes(r.bytes)
+                    ReleaseFile.Torrent(file, name)
+                }
+            }
+        } catch (e: Exception) {
+            _message.value = "Download failed: ${e.message}"
+            null
         }
+    }
+
+    /** Copies a downloaded torrent to a place the user picked. */
+    fun saveTorrent(file: File, target: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _message.value = try {
+                getApplication<Application>().contentResolver.openOutputStream(target)?.use { out ->
+                    file.inputStream().use { it.copyTo(out) }
+                }
+                "Saved"
+            } catch (e: Exception) {
+                "Save failed: ${e.message}"
+            }
+        }
+    }
+
+    suspend fun resolveMagnet(release: ReleaseInfo): String? {
+        knownMagnet(release)?.let { return it }
         return resolveDownload(release)?.takeIf { it.startsWith("magnet:", ignoreCase = true) }
     }
 
@@ -274,6 +321,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             null
         }
     }
+}
+
+/** The magnet link a result already carries (magnet field, info hash, or a magnet download link), without any network. */
+fun knownMagnet(release: ReleaseInfo): String? =
+    release.magnetUrl
+        ?: release.infoHash?.takeIf { it.isNotBlank() }?.let {
+            com.github.livingwithhippos.phonarr.core.util.Magnet.buildPublicMagnetLink(it, release.title)
+        }
+        ?: release.downloadUrl?.takeIf { it.startsWith("magnet:", ignoreCase = true) }
+
+/** What a search result downloads as: a magnet link or a cached .torrent file. */
+sealed interface ReleaseFile {
+    data class Magnet(val uri: String) : ReleaseFile
+    data class Torrent(val file: File, val name: String) : ReleaseFile
 }
 
 /** Backups are a few KB; anything larger than this isn't one. */

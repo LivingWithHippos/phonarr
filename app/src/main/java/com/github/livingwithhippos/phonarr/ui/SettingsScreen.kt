@@ -87,6 +87,7 @@ fun SettingsScreen(vm: MainViewModel) {
             onSetThemeMode = vm::setThemeMode,
             onSetThemeColor = vm::setThemeColor,
             onSetStandardFont = vm::setStandardFont,
+            onSetDetailedResults = vm::setDetailedResults,
             onSetDohEnabled = vm::setDohEnabled,
             onSetDohProvider = vm::setDohProvider,
             onSetDohCustomUrl = vm::setDohCustomUrl,
@@ -105,6 +106,7 @@ data class SettingsActions(
     val onSetThemeMode: (ThemeMode) -> Unit = {},
     val onSetThemeColor: (ThemeColor) -> Unit = {},
     val onSetStandardFont: (Boolean) -> Unit = {},
+    val onSetDetailedResults: (Boolean) -> Unit = {},
     val onSetDohEnabled: (Boolean) -> Unit = {},
     val onSetDohProvider: (DohProvider) -> Unit = {},
     val onSetDohCustomUrl: (String) -> Unit = {},
@@ -141,6 +143,24 @@ internal fun SettingsContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         AppearanceCard(settings, actions)
+        OutlinedCard(Modifier.fillMaxWidth()) {
+            Row(
+                Modifier.fillMaxWidth()
+                    .toggleable(value = settings.detailedResults, onValueChange = actions.onSetDetailedResults, role = Role.Switch)
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Detailed results", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Show search results as cards. Tapping one opens its details, with options to open, " +
+                            "share or save the magnet link and the torrent file.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Switch(checked = settings.detailedResults, onCheckedChange = null, modifier = Modifier.padding(start = 12.dp))
+            }
+        }
         OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp).selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Open site button", style = MaterialTheme.typography.titleMedium)

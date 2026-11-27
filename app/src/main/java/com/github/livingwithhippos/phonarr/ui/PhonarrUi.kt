@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -44,6 +45,10 @@ fun PhonarrUi(vm: MainViewModel = viewModel()) {
     var showSettings by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val message by vm.message.collectAsState()
+    val selectedRelease by vm.selectedRelease.collectAsState()
+    // keeps the search query and scroll position while a result's details are open
+    val saveableState = rememberSaveableStateHolder()
+    val showRelease = !showSettings && tab == 2 && selectedRelease != null
 
     LaunchedEffect(message) {
         message?.let {
@@ -53,6 +58,7 @@ fun PhonarrUi(vm: MainViewModel = viewModel()) {
     }
 
     BackHandler(enabled = showSettings) { showSettings = false }
+    BackHandler(enabled = showRelease) { vm.closeRelease() }
 
     BackHandler(enabled = !showSettings && tab == 1 && route != IndexerRoute.List) {
         route = if (route is IndexerRoute.Edit && (route as IndexerRoute.Edit).existing == null) IndexerRoute.Pick else IndexerRoute.List
@@ -62,10 +68,18 @@ fun PhonarrUi(vm: MainViewModel = viewModel()) {
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(if (showSettings) "Settings" else "Phonarr") },
+                title = {
+                    Text(
+                        when {
+                            showSettings -> "Settings"
+                            showRelease -> "Result"
+                            else -> "Phonarr"
+                        },
+                    )
+                },
                 navigationIcon = {
-                    if (showSettings) {
-                        IconButton(onClick = { showSettings = false }) {
+                    if (showSettings || showRelease) {
+                        IconButton(onClick = { if (showSettings) showSettings = false else vm.closeRelease() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
@@ -83,6 +97,10 @@ fun PhonarrUi(vm: MainViewModel = viewModel()) {
     ) { padding ->
         if (showSettings) {
             Column(Modifier.padding(padding)) { SettingsScreen(vm) }
+            return@Scaffold
+        }
+        if (showRelease) {
+            Column(Modifier.padding(padding)) { ReleaseDetailScreen(vm, selectedRelease!!) }
             return@Scaffold
         }
         Column(Modifier.padding(padding)) {
@@ -109,7 +127,7 @@ fun PhonarrUi(vm: MainViewModel = viewModel()) {
                         onDone = { route = IndexerRoute.List },
                     )
                 }
-                else -> SearchScreen(vm)
+                else -> saveableState.SaveableStateProvider("search") { SearchScreen(vm) }
             }
         }
     }

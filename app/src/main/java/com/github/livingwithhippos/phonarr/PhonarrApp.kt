@@ -45,6 +45,11 @@ class PhonarrApp : Application() {
 /** Holds the app-wide singletons. */
 class AppContainer(app: Application) {
     private val filesDir: File = app.filesDir
+
+    /** .torrent files downloaded for sharing; shared through the FileProvider, emptied at each start */
+    val torrentsDir: File = File(app.cacheDir, "torrents").also { dir ->
+        Thread { dir.deleteRecursively() }.start()
+    }
     val userAgent: String = runCatching { BrowserPages.userAgent(app) }.getOrDefault(IndexerHttp.DEFAULT_USER_AGENT)
     val challengeNotifier = ChallengeNotifier(app)
     val solver = WebViewChallengeSolver(app, onUnsolved = challengeNotifier::notify)

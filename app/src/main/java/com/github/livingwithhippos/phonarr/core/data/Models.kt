@@ -31,6 +31,8 @@ data class AppSettings(
     val themeColor: ThemeColor = ThemeColor.SYSTEM,
     /** use the system font instead of monospace */
     val standardFont: Boolean = false,
+    /** search results as cards that open a detail screen, instead of plain rows that open the link */
+    val detailedResults: Boolean = true,
 )
 
 @Serializable
