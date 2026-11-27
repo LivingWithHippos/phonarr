@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.ktor.server.cio)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)
+    implementation(libs.okhttp.dnsoverhttps)
     implementation(libs.jsoup)
     implementation(libs.snakeyaml.engine)
     implementation(libs.kotlinx.serialization.json)

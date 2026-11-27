@@ -7,9 +7,12 @@ import androidx.lifecycle.viewModelScope
 import com.github.livingwithhippos.phonarr.PhonarrApp
 import com.github.livingwithhippos.phonarr.core.cardigann.CardigannDefinition
 import com.github.livingwithhippos.phonarr.core.cardigann.ChallengeException
+import com.github.livingwithhippos.phonarr.core.data.AppSettings
 import com.github.livingwithhippos.phonarr.core.data.Backup
 import com.github.livingwithhippos.phonarr.core.data.BackupFile
+import com.github.livingwithhippos.phonarr.core.data.DohProvider
 import com.github.livingwithhippos.phonarr.core.data.IndexerConfig
+import com.github.livingwithhippos.phonarr.core.net.SwitchableDns
 import com.github.livingwithhippos.phonarr.core.torznab.ReleaseInfo
 import com.github.livingwithhippos.phonarr.core.torznab.SearchQuery
 import com.github.livingwithhippos.phonarr.service.ServerService
@@ -19,6 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private const val DOH_TEST_HOST = "github.com"
 
 data class SearchState(
     val running: Boolean = false,
@@ -130,6 +135,36 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setOpenSiteIn(browser: com.github.livingwithhippos.phonarr.core.data.SiteBrowser) =
         container.settings.update { it.copy(openSiteIn = browser) }
+
+    fun setDohEnabled(enabled: Boolean) = updateDns { it.copy(dohEnabled = enabled) }
+    fun setDohProvider(provider: DohProvider) = updateDns { it.copy(dohProvider = provider) }
+    fun setDohCustomUrl(url: String) = updateDns { it.copy(dohCustomUrl = url) }
+
+    /** Saves a DNS setting and drops open connections, so the next requests resolve names again. */
+    private fun updateDns(f: (AppSettings) -> AppSettings) {
+        container.settings.update(f)
+        // closing TLS sockets writes to the network, which Android forbids on the main thread
+        viewModelScope.launch(Dispatchers.IO) { container.okHttp.connectionPool.evictAll() }
+    }
+
+    private val _testingDoh = MutableStateFlow(false)
+    val testingDoh: StateFlow<Boolean> = _testingDoh.asStateFlow()
+
+    /** Resolves a well-known name with the current DNS settings and reports the result. */
+    fun testDoh() {
+        if (_testingDoh.value) return
+        _testingDoh.value = true
+        viewModelScope.launch {
+            val s = settings.value
+            _message.value = withContext(Dispatchers.IO) {
+                runCatching { SwitchableDns { s }.lookup(DOH_TEST_HOST) }.fold(
+                    onSuccess = { "$DOH_TEST_HOST resolved to ${it.first().hostAddress}" },
+                    onFailure = { it.message ?: it::class.simpleName },
+                )
+            }
+            _testingDoh.value = false
+        }
+    }
 
     fun updateDefinitions() {
         if (_updating.value) return

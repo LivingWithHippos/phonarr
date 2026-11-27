@@ -2,7 +2,7 @@
 
 A partial android reimplementation of [Prowlarr](https://github.com/prowlarr/prowlarr).
 
-## Using it
+## How to use
 
 1. Open the app. On first launch download the definitions (Server tab → *Update definitions*).
 2. Indexers tab → *Add indexer*, pick a site, *Save and test*.

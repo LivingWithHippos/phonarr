@@ -9,12 +9,14 @@ import com.github.livingwithhippos.phonarr.core.data.DefinitionRepository
 import com.github.livingwithhippos.phonarr.core.data.IndexerRepository
 import com.github.livingwithhippos.phonarr.core.data.SearchService
 import com.github.livingwithhippos.phonarr.core.data.SettingsRepository
+import com.github.livingwithhippos.phonarr.core.net.SwitchableDns
 import com.github.livingwithhippos.phonarr.core.server.ServerInfo
 import com.github.livingwithhippos.phonarr.core.server.TorznabServer
 import com.github.livingwithhippos.phonarr.core.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
+import okhttp3.OkHttpClient
 import java.io.File
 
 class PhonarrApp : Application() {
@@ -46,7 +48,15 @@ class AppContainer(app: Application) {
     val challengeNotifier = ChallengeNotifier(app)
     val solver = WebViewChallengeSolver(app, onUnsolved = challengeNotifier::notify)
 
+    val settings = SettingsRepository(filesDir)
+
+    /** Base OkHttp client; its connection pool is shared with the Ktor engine built from it. */
+    val okHttp: OkHttpClient = OkHttpClient.Builder()
+        .dns(SwitchableDns { settings.settings.value })
+        .build()
+
     val httpClient = HttpClient(OkHttp) {
+        engine { preconfigured = okHttp }
         followRedirects = false
         expectSuccess = false
         install(HttpTimeout) {
@@ -54,7 +64,6 @@ class AppContainer(app: Application) {
             connectTimeoutMillis = 15_000
         }
     }
-    val settings = SettingsRepository(filesDir)
     val indexers = IndexerRepository(filesDir)
     val definitions = DefinitionRepository(File(filesDir, "Definitions"), httpClient)
     val searchService = SearchService(indexers, definitions, httpClient, userAgent = userAgent, solver = solver)
