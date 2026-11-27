@@ -60,7 +60,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // its own package, so it installs next to the release build (its name comes from src/debug/res)
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
+            if (canSign) signingConfig = signingConfigs.getByName("release")
             optimization {
                 enable = true
                 // No packageScope: with it (androidx/kotlin/kotlinx only), R8 9.5 moved
