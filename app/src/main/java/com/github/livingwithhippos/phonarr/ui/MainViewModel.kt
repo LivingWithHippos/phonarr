@@ -12,6 +12,8 @@ import com.github.livingwithhippos.phonarr.core.data.Backup
 import com.github.livingwithhippos.phonarr.core.data.BackupFile
 import com.github.livingwithhippos.phonarr.core.data.DohProvider
 import com.github.livingwithhippos.phonarr.core.data.IndexerConfig
+import com.github.livingwithhippos.phonarr.core.data.ThemeColor
+import com.github.livingwithhippos.phonarr.core.data.ThemeMode
 import com.github.livingwithhippos.phonarr.core.net.SwitchableDns
 import com.github.livingwithhippos.phonarr.core.torznab.ReleaseInfo
 import com.github.livingwithhippos.phonarr.core.torznab.SearchQuery
@@ -174,6 +176,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _testingDoh.value = false
         }
     }
+
+    fun setThemeMode(mode: ThemeMode) = container.settings.update { it.copy(themeMode = mode) }
+    fun setThemeColor(color: ThemeColor) = container.settings.update { it.copy(themeColor = color) }
+    fun setStandardFont(enabled: Boolean) = container.settings.update { it.copy(standardFont = enabled) }
 
     fun updateDefinitions() {
         if (_updating.value) return

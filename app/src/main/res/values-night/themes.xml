@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- dark window behind Compose, so launching in dark mode doesn't flash white -->
+    <style name="Theme.Phonarr" parent="android:Theme.Material.NoActionBar" />
+</resources>

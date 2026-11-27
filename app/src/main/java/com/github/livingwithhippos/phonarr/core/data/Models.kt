@@ -27,7 +27,18 @@ data class AppSettings(
     val dohCustomUrl: String = "",
     /** listen on every network interface (0.0.0.0) instead of only this phone (127.0.0.1) */
     val listenOnNetwork: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themeColor: ThemeColor = ThemeColor.SYSTEM,
+    /** use the system font instead of monospace */
+    val standardFont: Boolean = false,
 )
+
+@Serializable
+enum class ThemeMode { SYSTEM, LIGHT, DARK, AMOLED }
+
+/** SYSTEM uses the wallpaper's colors (Material You). */
+@Serializable
+enum class ThemeColor { SYSTEM, PURPLE, BLUE, TEAL, GREEN, ORANGE, RED }
 
 /** The address the server binds to. */
 val AppSettings.listenHost: String get() = if (listenOnNetwork) "0.0.0.0" else "127.0.0.1"

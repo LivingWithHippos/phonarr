@@ -12,10 +12,10 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.TextButton
+import com.github.livingwithhippos.phonarr.ui.theme.Button
+import androidx.compose.material3.OutlinedCard
+import com.github.livingwithhippos.phonarr.ui.theme.OutlinedButton
+import com.github.livingwithhippos.phonarr.ui.theme.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -39,6 +39,17 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.ui.text.input.KeyboardType
 import com.github.livingwithhippos.phonarr.core.data.DohProvider
 import com.github.livingwithhippos.phonarr.core.net.SwitchableDns
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.text.font.FontWeight
+import com.github.livingwithhippos.phonarr.core.data.ThemeColor
+import com.github.livingwithhippos.phonarr.core.data.ThemeMode
+import com.github.livingwithhippos.phonarr.ui.theme.FilterChip
+import com.github.livingwithhippos.phonarr.ui.theme.shouldUseDarkTheme
+import com.github.livingwithhippos.phonarr.ui.theme.swatchColor
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -77,7 +88,8 @@ fun SettingsScreen(vm: MainViewModel) {
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Card(Modifier.fillMaxWidth()) {
+        AppearanceCard(vm)
+        OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp).selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Open site button", style = MaterialTheme.typography.titleMedium)
                 Text("Where the indexer screen opens a site.", style = MaterialTheme.typography.bodySmall)
@@ -94,7 +106,7 @@ fun SettingsScreen(vm: MainViewModel) {
             }
         }
         DnsCard(vm)
-        Card(Modifier.fillMaxWidth()) {
+        OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Backup", style = MaterialTheme.typography.titleMedium)
                 Text(
@@ -114,12 +126,90 @@ fun SettingsScreen(vm: MainViewModel) {
     }
 }
 
+/** Dark mode, theme color and font choices. */
+@Composable
+private fun AppearanceCard(vm: MainViewModel) {
+    val settings by vm.settings.collectAsState()
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Appearance", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+            Text("Dark mode", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                ThemeMode.entries.forEach { mode ->
+                    FilterChip(
+                        selected = settings.themeMode == mode,
+                        onClick = { vm.setThemeMode(mode) },
+                        label = { Text(mode.label) },
+                    )
+                }
+            }
+
+            Text("Color", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            val dark = shouldUseDarkTheme(settings.themeMode)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                ThemeColor.entries.forEach { color ->
+                    val swatch = color.swatchColor(dark)
+                    FilterChip(
+                        selected = settings.themeColor == color,
+                        onClick = { vm.setThemeColor(color) },
+                        leadingIcon = swatch?.let {
+                            {
+                                Box(
+                                    Modifier.size(12.dp).background(it)
+                                        .border(1.dp, MaterialTheme.colorScheme.outline),
+                                )
+                            }
+                        },
+                        label = { Text(color.label) },
+                    )
+                }
+            }
+
+            Row(
+                Modifier.fillMaxWidth()
+                    .toggleable(value = settings.standardFont, onValueChange = vm::setStandardFont, role = Role.Switch),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Standard font", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Use the system font instead of monospace.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = settings.standardFont, onCheckedChange = null, modifier = Modifier.padding(start = 12.dp))
+            }
+        }
+    }
+}
+
+private val ThemeMode.label: String
+    get() = when (this) {
+        ThemeMode.SYSTEM -> "System"
+        ThemeMode.LIGHT -> "Light"
+        ThemeMode.DARK -> "Dark"
+        ThemeMode.AMOLED -> "AMOLED"
+    }
+
+private val ThemeColor.label: String
+    get() = when (this) {
+        ThemeColor.SYSTEM -> "Wallpaper"
+        ThemeColor.PURPLE -> "Purple"
+        ThemeColor.BLUE -> "Blue"
+        ThemeColor.TEAL -> "Teal"
+        ThemeColor.GREEN -> "Green"
+        ThemeColor.ORANGE -> "Orange"
+        ThemeColor.RED -> "Red"
+    }
+
 @Composable
 private fun DnsCard(vm: MainViewModel) {
     val settings by vm.settings.collectAsState()
     val testing by vm.testingDoh.collectAsState()
     var customUrl by remember { mutableStateOf(settings.dohCustomUrl) }
-    Card(Modifier.fillMaxWidth()) {
+    OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
                 Modifier.fillMaxWidth()

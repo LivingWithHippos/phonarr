@@ -5,6 +5,8 @@ import com.github.livingwithhippos.phonarr.core.data.Backup
 import com.github.livingwithhippos.phonarr.core.data.IndexerConfig
 import com.github.livingwithhippos.phonarr.core.data.IndexerRepository
 import com.github.livingwithhippos.phonarr.core.data.SiteBrowser
+import com.github.livingwithhippos.phonarr.core.data.ThemeColor
+import com.github.livingwithhippos.phonarr.core.data.ThemeMode
 import com.github.livingwithhippos.phonarr.core.data.listenHost
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -19,6 +21,9 @@ class BackupTest {
     fun listenOnNetworkDefaultsOffAndPicksHost() {
         val old = Backup.decode("""{"app":"Phonarr","version":1,"settings":{"apiKey":"abc","port":1234}}""")
         assertFalse(old.settings.listenOnNetwork)
+        assertEquals(ThemeMode.SYSTEM, old.settings.themeMode)
+        assertEquals(ThemeColor.SYSTEM, old.settings.themeColor)
+        assertFalse(old.settings.standardFont)
         assertEquals("127.0.0.1", old.settings.listenHost)
         assertEquals("0.0.0.0", old.settings.copy(listenOnNetwork = true).listenHost)
 

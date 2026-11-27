@@ -8,14 +8,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import com.github.livingwithhippos.phonarr.ui.theme.Button
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import com.github.livingwithhippos.phonarr.ui.theme.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.github.livingwithhippos.phonarr.ui.theme.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,7 +52,7 @@ fun ServerScreen(vm: MainViewModel) {
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Card(Modifier.fillMaxWidth()) {
+        OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Torznab server", style = MaterialTheme.typography.titleMedium)
                 Text(if (running) "Running on ${settings.listenHost}:${settings.port}" else "Stopped")
@@ -94,7 +94,7 @@ fun ServerScreen(vm: MainViewModel) {
             }
         }
 
-        Card(Modifier.fillMaxWidth()) {
+        OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Connect your apps", style = MaterialTheme.typography.titleMedium)
                 Text("Add a Torznab indexer in your app with this URL and API key. Use \"all\" to search every enabled indexer, or an indexer number from the Indexers tab.")
@@ -120,7 +120,7 @@ fun ServerScreen(vm: MainViewModel) {
             }
         }
 
-        Card(Modifier.fillMaxWidth()) {
+        OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Indexer definitions", style = MaterialTheme.typography.titleMedium)
                 val last = settings.lastDefinitionsUpdate

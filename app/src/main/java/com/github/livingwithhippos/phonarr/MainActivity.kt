@@ -1,5 +1,7 @@
 package com.github.livingwithhippos.phonarr
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -21,8 +23,10 @@ class MainActivity : ComponentActivity() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+        val settingsFlow = (application as PhonarrApp).container.settings.settings
         setContent {
-            PhonarrTheme {
+            val settings by settingsFlow.collectAsState()
+            PhonarrTheme(settings) {
                 PhonarrUi()
             }
         }
