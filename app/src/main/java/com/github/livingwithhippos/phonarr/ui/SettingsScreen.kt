@@ -54,6 +54,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.github.livingwithhippos.phonarr.core.data.AppSettings
 import com.github.livingwithhippos.phonarr.ui.theme.PhonarrTheme
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Icon
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
+import com.github.livingwithhippos.phonarr.R
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -72,8 +79,10 @@ fun SettingsScreen(vm: MainViewModel) {
         if (uri != null) scope.launch { pendingRestore = vm.readBackup(uri) }
     }
 
+    val uriHandler = LocalUriHandler.current
     SettingsContent(
         settings = settings,
+        versionName = vm.versionName,
         indexerCount = indexers.size,
         testingDoh = testingDoh,
         pendingRestore = pendingRestore,
@@ -92,6 +101,8 @@ fun SettingsScreen(vm: MainViewModel) {
             onSetDohProvider = vm::setDohProvider,
             onSetDohCustomUrl = vm::setDohCustomUrl,
             onTestDoh = vm::testDoh,
+            // openUri throws when no app can handle the link
+            onOpenLink = { url -> runCatching { uriHandler.openUri(url) } },
         ),
     )
 }
@@ -111,11 +122,13 @@ data class SettingsActions(
     val onSetDohProvider: (DohProvider) -> Unit = {},
     val onSetDohCustomUrl: (String) -> Unit = {},
     val onTestDoh: () -> Unit = {},
+    val onOpenLink: (String) -> Unit = {},
 )
 
 @Composable
 internal fun SettingsContent(
     settings: AppSettings,
+    versionName: String,
     indexerCount: Int,
     testingDoh: Boolean,
     pendingRestore: BackupFile?,
@@ -190,6 +203,81 @@ internal fun SettingsContent(
                     Button(onClick = actions.onCreateBackup) { Text("Create backup") }
                     OutlinedButton(onClick = actions.onOpenBackup) { Text("Restore backup") }
                 }
+            }
+        }
+        SupportCard(actions)
+        AboutCard(versionName, actions)
+    }
+}
+
+private const val REPOSITORY_URL = "https://github.com/LivingWithHippos/phonarr"
+private const val DONATE_KOFI_URL = "https://ko-fi.com/E1E412NFX7"
+private const val DONATE_GITHUB_URL = "https://github.com/LivingWithHippos/phonarr#donate-coffee"
+
+@Composable
+private fun CardTitle(@DrawableRes icon: Int, title: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp),
+        )
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun OpenInNewIcon() {
+    Spacer(Modifier.size(8.dp))
+    Icon(painter = painterResource(R.drawable.ic_open_in_new), contentDescription = null, modifier = Modifier.size(16.dp))
+}
+
+@Composable
+private fun SupportCard(actions: SettingsActions) {
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            CardTitle(R.drawable.ic_favorite, "Support Phonarr")
+            Text(
+                "Phonarr is free and open source. If you find it useful, consider buying me a coffee.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                "The GitHub page always has the latest donation options.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(4.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { actions.onOpenLink(DONATE_KOFI_URL) }, modifier = Modifier.weight(1f)) {
+                    Text("Ko-fi")
+                    OpenInNewIcon()
+                }
+                OutlinedButton(onClick = { actions.onOpenLink(DONATE_GITHUB_URL) }, modifier = Modifier.weight(1f)) {
+                    Text("GitHub")
+                    OpenInNewIcon()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AboutCard(versionName: String, actions: SettingsActions) {
+    OutlinedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            CardTitle(R.drawable.ic_info, "About")
+            Text("Version $versionName", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                "Phonarr is open source: contributions to the code are welcome on GitHub.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(4.dp))
+            OutlinedButton(onClick = { actions.onOpenLink(REPOSITORY_URL) }, modifier = Modifier.fillMaxWidth()) {
+                Text("Contribute on GitHub")
+                OpenInNewIcon()
             }
         }
     }
@@ -353,7 +441,7 @@ private fun SettingsPreview() {
     )
     PhonarrTheme(settings) {
         Surface {
-            SettingsContent(settings, indexerCount = 12, testingDoh = false, pendingRestore = null, actions = SettingsActions())
+            SettingsContent(settings, versionName = "1.0", indexerCount = 12, testingDoh = false, pendingRestore = null, actions = SettingsActions())
         }
     }
 }

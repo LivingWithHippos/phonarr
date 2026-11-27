@@ -45,6 +45,10 @@ class PhonarrApp : Application() {
 /** Holds the app-wide singletons. */
 class AppContainer(app: Application) {
     private val filesDir: File = app.filesDir
+    private val packageInfo = runCatching { app.packageManager.getPackageInfo(app.packageName, 0) }.getOrNull()
+
+    /** The installed version, e.g. "1.0". */
+    val versionName: String = packageInfo?.versionName ?: "0"
 
     /** .torrent files downloaded for sharing; shared through the FileProvider, emptied at each start */
     val torrentsDir: File = File(app.cacheDir, "torrents").also { dir ->
@@ -80,13 +84,12 @@ class AppContainer(app: Application) {
     ) { settings.settings.value.apiKey }
 
     private fun serverInfo(app: Application): ServerInfo {
-        val pkg = runCatching { app.packageManager.getPackageInfo(app.packageName, 0) }.getOrNull()
         return ServerInfo(
-            appVersion = pkg?.versionName ?: "0",
+            appVersion = versionName,
             osVersion = android.os.Build.VERSION.RELEASE,
             appDataPath = filesDir.absolutePath,
             // the APK's install/update time is the closest thing to a build time available at runtime
-            buildTime = java.time.Instant.ofEpochMilli(pkg?.lastUpdateTime ?: 0),
+            buildTime = java.time.Instant.ofEpochMilli(packageInfo?.lastUpdateTime ?: 0),
         )
     }
 }

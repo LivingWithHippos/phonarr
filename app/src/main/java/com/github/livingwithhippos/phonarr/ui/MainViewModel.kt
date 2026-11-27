@@ -40,6 +40,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val container = (app as PhonarrApp).container
 
     val settings = container.settings.settings
+    val versionName = container.versionName
     val indexers = container.indexers.indexers
     val definitions = container.definitions.summaries
     val serverRunning = ServerService.running

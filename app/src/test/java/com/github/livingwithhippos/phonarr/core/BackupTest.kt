@@ -24,7 +24,7 @@ class BackupTest {
         assertEquals(ThemeMode.SYSTEM, old.settings.themeMode)
         assertEquals(ThemeColor.SYSTEM, old.settings.themeColor)
         assertFalse(old.settings.standardFont)
-        assertFalse(old.settings.detailedResults)
+        assertTrue(old.settings.detailedResults)
         assertEquals("127.0.0.1", old.settings.listenHost)
         assertEquals("0.0.0.0", old.settings.copy(listenOnNetwork = true).listenHost)
 

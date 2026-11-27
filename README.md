@@ -38,6 +38,10 @@ and reuses the cookies it gets.
 
 Torrent files can't be read back from a WebView, so on some sites downloads may still fail (magnets work).
 
+## Donate :coffee:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E1E412NFX7)
+
 ## Credits
 
 Vectors and icons by [SVG Repo](https://www.svgrepo.com/svg/252900/tiger)
