@@ -13,22 +13,29 @@ object Template {
 
     private val logicRegex = Regex("\\b(and|or|eq|ne)(?:\\s+(\\(?\\.[^)\\s]+\\)?|\"[^\"]+\")){2,}")
     private val logicParamRegex = Regex("\\s+(\\(?\\.[^)\\s]+\\)?|\"[^\"]+\")")
-    private val reReplaceRegex = Regex("\\{\\{\\s*re_replace\\s+(\\..+?)\\s+\"(.*?)\"\\s+\"(.*?)\"\\s*\\}\\}")
+    private val reReplaceRegex =
+        Regex("\\{\\{\\s*re_replace\\s+(\\..+?)\\s+\"(.*?)\"\\s+\"(.*?)\"\\s*\\}\\}")
     private val joinRegex = Regex("\\{\\{\\s*join\\s+(\\..+?)\\s+\"(.*?)\"\\s*\\}\\}")
-    private val ifElseRegex = Regex("\\{\\{\\s*if\\s*(.+?)\\s*\\}\\}(.*?)\\{\\{\\s*else\\s*\\}\\}(.*?)\\{\\{\\s*end\\s*\\}\\}")
+    private val ifElseRegex =
+        Regex("\\{\\{\\s*if\\s*(.+?)\\s*\\}\\}(.*?)\\{\\{\\s*else\\s*\\}\\}(.*?)\\{\\{\\s*end\\s*\\}\\}")
     private val rangeRegex = Regex(
         "\\{\\{\\s*range\\s*(((?<index>\\$.+?),)((\\s*(?<element>.+?)\\s*(:=)\\s*)))?(?<variable>.+?)\\s*\\}\\}(?<prefix>.*?)\\{\\{\\.\\}\\}(?<postfix>.*?)\\{\\{end\\}\\}",
     )
     private val variableRegex = Regex("\\{\\{\\s*(\\..+?)\\s*\\}\\}")
 
-    fun apply(template: String?, variables: Map<String, Any?>, modifier: ((String?) -> String?)? = null): String? {
+    fun apply(
+        template: String?,
+        variables: Map<String, Any?>,
+        modifier: ((String?) -> String?)? = null
+    ): String? {
         if (template.isNullOrBlank() || !template.contains("{{")) return template
         var t: String = template
 
         // {{ re_replace .Query.Keywords "[^a-zA-Z0-9]+" "%" }}
         for (m in reReplaceRegex.findAll(t).toList()) {
             val input = variables[m.groupValues[1]]?.toString() ?: ""
-            var expanded: String? = Regexes.compileOrNull(m.groupValues[2])?.replace(input, Regexes.dotNetReplacement(m.groupValues[3])) ?: input
+            var expanded: String? = Regexes.compileOrNull(m.groupValues[2])
+                ?.replace(input, Regexes.dotNetReplacement(m.groupValues[3])) ?: input
             if (modifier != null) expanded = modifier(expanded)
             t = t.replace(m.value, expanded ?: "")
         }
@@ -70,6 +77,7 @@ object Template {
                         if ((variables[p] as? String).isNullOrBlank() == isAnd) break
                     }
                 }
+
                 "eq", "ne" -> {
                     val wantEqual = function == "eq"
                     if (params.size > 2) length = params[2].second - start
@@ -120,7 +128,8 @@ object Template {
 
         // {{ .Variable }}
         for (m in variableRegex.findAll(t).toList()) {
-            var value = variables[m.groupValues[1]]?.let { if (it is Collection<*>) it.joinToString(" ") else it.toString() }
+            var value =
+                variables[m.groupValues[1]]?.let { if (it is Collection<*>) it.joinToString(" ") else it.toString() }
             if (modifier != null) value = modifier(value)
             t = t.replace(m.value, value ?: "")
         }
@@ -157,7 +166,11 @@ object Regexes {
         compile(pattern)
     } catch (e: IllegalArgumentException) { // PatternSyntaxException
         if (synchronized(unsupported) { unsupported.add(pattern) }) {
-            Log.w("Skipping unsupported regex \"$pattern\": ${e.message?.lineSequence()?.firstOrNull()}")
+            Log.w(
+                "Skipping unsupported regex \"$pattern\": ${
+                    e.message?.lineSequence()?.firstOrNull()
+                }"
+            )
         }
         null
     }
@@ -182,7 +195,11 @@ object Regexes {
                         if (end > 0) {
                             val name = pattern.substring(i + 3, end)
                             sb.append('\\').append(next).append('{')
-                                .append(if (name.startsWith("Is") && name.length > 2 && name[2].isUpperCase()) "In" + name.substring(2) else name)
+                                .append(
+                                    if (name.startsWith("Is") && name.length > 2 && name[2].isUpperCase()) "In" + name.substring(
+                                        2
+                                    ) else name
+                                )
                                 .append('}')
                             i = end + 1
                             continue
@@ -202,16 +219,25 @@ object Regexes {
                     }
                     sb.append("\\{")
                 }
+
                 c == '}' && !inClass -> sb.append("\\}")
                 c == '[' && inClass -> sb.append("\\[")
                 c == '[' -> {
                     inClass = true
                     sb.append(c)
                     // a ']' right after '[' or '[^' is a literal
-                    if (i + 1 < pattern.length && pattern[i + 1] == '^') { sb.append('^'); i++ }
-                    if (i + 1 < pattern.length && pattern[i + 1] == ']') { sb.append("\\]"); i++ }
+                    if (i + 1 < pattern.length && pattern[i + 1] == '^') {
+                        sb.append('^'); i++
+                    }
+                    if (i + 1 < pattern.length && pattern[i + 1] == ']') {
+                        sb.append("\\]"); i++
+                    }
                 }
-                c == ']' && inClass -> { inClass = false; sb.append(c) }
+
+                c == ']' && inClass -> {
+                    inClass = false; sb.append(c)
+                }
+
                 else -> sb.append(c)
             }
             i++

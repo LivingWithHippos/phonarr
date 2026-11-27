@@ -45,7 +45,8 @@ class PhonarrApp : Application() {
 /** Holds the app-wide singletons. */
 class AppContainer(app: Application) {
     private val filesDir: File = app.filesDir
-    private val packageInfo = runCatching { app.packageManager.getPackageInfo(app.packageName, 0) }.getOrNull()
+    private val packageInfo =
+        runCatching { app.packageManager.getPackageInfo(app.packageName, 0) }.getOrNull()
 
     /** The installed version, e.g. "1.0". */
     val versionName: String = packageInfo?.versionName ?: "0"
@@ -54,7 +55,8 @@ class AppContainer(app: Application) {
     val torrentsDir: File = File(app.cacheDir, "torrents").also { dir ->
         Thread { dir.deleteRecursively() }.start()
     }
-    val userAgent: String = runCatching { BrowserPages.userAgent(app) }.getOrDefault(IndexerHttp.DEFAULT_USER_AGENT)
+    val userAgent: String =
+        runCatching { BrowserPages.userAgent(app) }.getOrDefault(IndexerHttp.DEFAULT_USER_AGENT)
     val challengeNotifier = ChallengeNotifier(app)
     val solver = WebViewChallengeSolver(app, onUnsolved = challengeNotifier::notify)
 
@@ -76,7 +78,8 @@ class AppContainer(app: Application) {
     }
     val indexers = IndexerRepository(filesDir)
     val definitions = DefinitionRepository(File(filesDir, "Definitions"), httpClient)
-    val searchService = SearchService(indexers, definitions, httpClient, userAgent = userAgent, solver = solver)
+    val searchService =
+        SearchService(indexers, definitions, httpClient, userAgent = userAgent, solver = solver)
     val server = TorznabServer(
         searchService,
         serverInfo(app),

@@ -34,7 +34,8 @@ object Challenge {
 
     /** Name of the protection that blocked [resp], or null if it's a normal response. */
     fun detect(resp: HttpResp): String? {
-        fun header(name: String) = resp.headers.entries.firstOrNull { it.key.equals(name, true) }?.value?.firstOrNull()
+        fun header(name: String) =
+            resp.headers.entries.firstOrNull { it.key.equals(name, true) }?.value?.firstOrNull()
         if (header("cf-mitigated")?.equals("challenge", true) == true) return "Cloudflare"
         if (resp.status !in listOf(403, 429, 503)) return null
         val server = header("Server")?.lowercase() ?: ""

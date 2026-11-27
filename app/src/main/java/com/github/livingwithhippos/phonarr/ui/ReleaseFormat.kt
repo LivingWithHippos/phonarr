@@ -10,7 +10,9 @@ fun humanSize(bytes: Long): String {
     val units = listOf("B", "KB", "MB", "GB", "TB")
     var v = bytes.toDouble()
     var i = 0
-    while (v >= 1024 && i < units.lastIndex) { v /= 1024; i++ }
+    while (v >= 1024 && i < units.lastIndex) {
+        v /= 1024; i++
+    }
     return if (i == 0) "$bytes B" else String.format(Locale.US, "%.1f %s", v, units[i])
 }
 
@@ -68,12 +70,13 @@ fun humanDuration(seconds: Long): String {
  * without path separators or odd characters, ending in .torrent.
  */
 fun torrentFileName(fileName: String?, title: String?): String {
-    val base = (fileName?.takeIf { it.isNotBlank() } ?: title?.takeIf { it.isNotBlank() } ?: "release")
-        .substringAfterLast('/').substringAfterLast('\\')
-        .removeSuffix(".torrent")
-        .replace(Regex("""[^\p{L}\p{N} ._()\[\]-]"""), "_")
-        .trim(' ', '.')
-        .take(120)
-        .ifEmpty { "release" }
+    val base =
+        (fileName?.takeIf { it.isNotBlank() } ?: title?.takeIf { it.isNotBlank() } ?: "release")
+            .substringAfterLast('/').substringAfterLast('\\')
+            .removeSuffix(".torrent")
+            .replace(Regex("""[^\p{L}\p{N} ._()\[\]-]"""), "_")
+            .trim(' ', '.')
+            .take(120)
+            .ifEmpty { "release" }
     return "$base.torrent"
 }

@@ -6,7 +6,8 @@ import java.util.Locale
 
 object Xml {
     // control characters and unpaired surrogates are not allowed in XML 1.0
-    private val invalid = Regex("(?<![\\uD800-\\uDBFF])[\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F-\\x9F\\uFEFF\\uFFFE\\uFFFF]")
+    private val invalid =
+        Regex("(?<![\\uD800-\\uDBFF])[\\uDC00-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F-\\x9F\\uFEFF\\uFFFE\\uFFFF]")
 
     fun clean(s: String?): String? = s?.replace(invalid, "")
 
@@ -30,10 +31,15 @@ object Xml {
 
 /** Builds Torznab RSS output, following Prowlarr's NewznabResults. */
 object TorznabXml {
-    private val pubDateFormat = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH)
+    private val pubDateFormat =
+        DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH)
 
     fun error(code: Int, description: String): String =
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error code=\"$code\" description=\"${Xml.escape(description)}\" />\n"
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<error code=\"$code\" description=\"${
+            Xml.escape(
+                description
+            )
+        }\" />\n"
 
     /**
      * @param linkFor returns the URL that clients should use to download a release
@@ -58,7 +64,8 @@ object TorznabXml {
             el(sb, "description", r.description)
             el(sb, "guid", r.guid ?: link)
             sb.append("      <prowlarrindexer id=\"").append(r.indexerId).append("\" type=\"")
-                .append(r.indexerPrivacy).append("\">").append(Xml.escape(r.indexerName)).append("</prowlarrindexer>\n")
+                .append(r.indexerPrivacy).append("\">").append(Xml.escape(r.indexerName))
+                .append("</prowlarrindexer>\n")
             r.infoUrl?.let { el(sb, "comments", it) }
             el(sb, "pubDate", pubDateFormat.format(r.publishDate ?: now))
             el(sb, "size", (r.size ?: 0).toString())
@@ -102,14 +109,17 @@ object TorznabXml {
     }
 
     private fun el(sb: StringBuilder, name: String, value: String?) {
-        sb.append("      <").append(name).append('>').append(Xml.escape(value)).append("</").append(name).append(">\n")
+        sb.append("      <").append(name).append('>').append(Xml.escape(value)).append("</")
+            .append(name).append(">\n")
     }
 
     private fun attr(sb: StringBuilder, name: String, value: Any?) {
         if (value == null) return
         val v = if (value is Double) formatDouble(value) else value.toString()
-        sb.append("      <torznab:attr name=\"").append(name).append("\" value=\"").append(Xml.escape(v)).append("\" />\n")
+        sb.append("      <torznab:attr name=\"").append(name).append("\" value=\"")
+            .append(Xml.escape(v)).append("\" />\n")
     }
 
-    private fun formatDouble(d: Double): String = if (d == Math.floor(d) && !d.isInfinite()) d.toLong().toString() else d.toString()
+    private fun formatDouble(d: Double): String =
+        if (d == Math.floor(d) && !d.isInfinite()) d.toLong().toString() else d.toString()
 }

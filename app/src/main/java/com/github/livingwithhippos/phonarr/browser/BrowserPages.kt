@@ -66,7 +66,10 @@ object BrowserPages {
             // evaluateJavascript returns a JSON-encoded string holding our JSON array
             val inner = Json.parseToJsonElement(raw).jsonPrimitive.content
             val arr = Json.parseToJsonElement(inner).jsonArray
-            PageState(arr[0].jsonPrimitive.content == "complete", arr[1].jsonPrimitive.content == "true")
+            PageState(
+                arr[0].jsonPrimitive.content == "complete",
+                arr[1].jsonPrimitive.content == "true"
+            )
         }.getOrNull()
     }
 
@@ -75,7 +78,8 @@ object BrowserPages {
         return runCatching { Json.parseToJsonElement(raw).jsonPrimitive.content }.getOrNull()
     }
 
-    private suspend fun evaluate(webView: WebView, js: String): String? = suspendCancellableCoroutine { cont ->
-        webView.evaluateJavascript(js) { if (cont.isActive) cont.resume(it) }
-    }
+    private suspend fun evaluate(webView: WebView, js: String): String? =
+        suspendCancellableCoroutine { cont ->
+            webView.evaluateJavascript(js) { if (cont.isActive) cont.resume(it) }
+        }
 }

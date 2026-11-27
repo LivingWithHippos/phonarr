@@ -28,7 +28,9 @@ fun InfoTag(text: String, color: Color = MaterialTheme.colorScheme.onSurfaceVari
         Text(
             text,
             style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.heightIn(min = 24.dp).padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier
+                .heightIn(min = 24.dp)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
         )
     }
 }
@@ -59,6 +61,11 @@ fun ReleaseTags(r: ReleaseInfo, showIndexer: Boolean = true) {
         r.publishDate?.let { InfoTag(relativeAge(it)) }
         r.categories.firstOrNull { it.name.isNotBlank() }?.let { InfoTag(it.name) }
         if (showIndexer) r.indexerName?.let { InfoTag(it) }
-        downloadFactorLabel(r.downloadVolumeFactor)?.let { InfoTag(it, MaterialTheme.colorScheme.primary) }
+        downloadFactorLabel(r.downloadVolumeFactor)?.let {
+            InfoTag(
+                it,
+                MaterialTheme.colorScheme.primary
+            )
+        }
     }
 }

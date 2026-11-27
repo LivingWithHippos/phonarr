@@ -31,11 +31,16 @@ class Filters(
                     Log.d("$definitionId: ${e.message}")
                     d
                 }
-                "regexp" -> Regexes.compileOrNull(filter.argString ?: "")?.find(d)?.groups?.let { g -> if (g.size > 1) g[1]?.value ?: "" else "" } ?: ""
+
+                "regexp" -> Regexes.compileOrNull(filter.argString ?: "")
+                    ?.find(d)?.groups?.let { g -> if (g.size > 1) g[1]?.value ?: "" else "" } ?: ""
+
                 "re_replace" -> {
                     val replacement = applyTemplate(filter.arg(1) ?: "", variables) ?: ""
-                    Regexes.compileOrNull(filter.arg(0) ?: "")?.replace(d, Regexes.dotNetReplacement(replacement)) ?: d
+                    Regexes.compileOrNull(filter.arg(0) ?: "")
+                        ?.replace(d, Regexes.dotNetReplacement(replacement)) ?: d
                 }
+
                 "split" -> {
                     val sep = filter.arg(0) ?: " "
                     val parts = d.split(sep[0])
@@ -43,14 +48,23 @@ class Filters(
                     if (pos < 0) pos += parts.size
                     parts[pos]
                 }
-                "replace" -> d.replace(filter.arg(0) ?: "", applyTemplate(filter.arg(1) ?: "", variables) ?: "")
-                "trim" -> filter.argString?.takeIf { it.isNotEmpty() }?.let { d.trim(it[0]) } ?: d.trim()
+
+                "replace" -> d.replace(
+                    filter.arg(0) ?: "",
+                    applyTemplate(filter.arg(1) ?: "", variables) ?: ""
+                )
+
+                "trim" -> filter.argString?.takeIf { it.isNotEmpty() }?.let { d.trim(it[0]) }
+                    ?: d.trim()
+
                 "prepend" -> (applyTemplate(filter.argString ?: "", variables) ?: "") + d
                 "append" -> d + (applyTemplate(filter.argString ?: "", variables) ?: "")
                 "tolower" -> d.lowercase()
                 "toupper" -> d.uppercase()
                 "base64decode" -> String(base64UrlDecode(d), Charsets.UTF_8)
-                "base64encode" -> Base64.getUrlEncoder().withoutPadding().encodeToString(d.toByteArray(Charsets.UTF_8))
+                "base64encode" -> Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(d.toByteArray(Charsets.UTF_8))
+
                 "urldecode" -> URLDecoder.decode(d, encoding)
                 "urlencode" -> urlEncode(d, encoding)
                 "htmldecode" -> Parser.unescapeEntities(d, false)
@@ -61,27 +75,50 @@ class Filters(
                 "diacritics" -> {
                     if (filter.argString != "replace") throw IllegalArgumentException("unsupported diacritics filter argument")
                     val decomposed = Normalizer.normalize(d, Normalizer.Form.NFD)
-                    Normalizer.normalize(decomposed.filter { Character.getType(it) != Character.NON_SPACING_MARK.toInt() }, Normalizer.Form.NFC)
+                    Normalizer.normalize(
+                        decomposed.filter { Character.getType(it) != Character.NON_SPACING_MARK.toInt() },
+                        Normalizer.Form.NFC
+                    )
                 }
+
                 "jsonjoinarray" -> {
                     val token = JsonPath.select(Json.parseToJsonElement(d), filter.arg(0) ?: "")
-                    (token as? JsonArray)?.joinToString(filter.arg(1) ?: "") { JsonPath.asString(it) ?: "" } ?: ""
+                    (token as? JsonArray)?.joinToString(filter.arg(1) ?: "") {
+                        JsonPath.asString(it) ?: ""
+                    } ?: ""
                 }
+
                 "hexdump" -> {
-                    Log.d("CardigannIndexer ($definitionId): strdump: " + d.map { "$it(${"%02X".format(it.code)})" }.joinToString(""))
+                    Log.d("CardigannIndexer ($definitionId): strdump: " + d.map {
+                        "$it(${
+                            "%02X".format(
+                                it.code
+                            )
+                        })"
+                    }.joinToString(""))
                     d
                 }
+
                 "strdump" -> {
                     val tag = filter.argString?.let { "($it):" } ?: ":"
-                    Log.d("CardigannIndexer ($definitionId): strdump$tag ${d.replace("\r", "\\r").replace("\n", "\\n").replace("\u00A0", "\\xA0")}")
+                    Log.d(
+                        "CardigannIndexer ($definitionId): strdump$tag ${
+                            d.replace("\r", "\\r").replace("\n", "\\n").replace("\u00A0", "\\xA0")
+                        }"
+                    )
                     d
                 }
+
                 "validate" -> {
                     val delimiters = Regex("[, /)(.;\\[\\]\"|:]")
-                    val valid = (filter.argString ?: "").lowercase().split(delimiters).map { it.trim() }.filter { it.isNotEmpty() }
-                    val have = d.lowercase().split(delimiters).map { it.trim() }.filter { it.isNotEmpty() }
+                    val valid =
+                        (filter.argString ?: "").lowercase().split(delimiters).map { it.trim() }
+                            .filter { it.isNotEmpty() }
+                    val have =
+                        d.lowercase().split(delimiters).map { it.trim() }.filter { it.isNotEmpty() }
                     valid.filter { it in have }.distinct().joinToString(", ")
                 }
+
                 else -> {
                     Log.e("CardigannIndexer ($definitionId): Unsupported field filter: ${filter.name}")
                     d
@@ -100,7 +137,10 @@ class Filters(
                 val c = b.toInt() and 0xff
                 val ch = c.toChar()
                 when {
-                    ch in 'a'..'z' || ch in 'A'..'Z' || ch in '0'..'9' || ch in "-_.!*()" -> sb.append(ch)
+                    ch in 'a'..'z' || ch in 'A'..'Z' || ch in '0'..'9' || ch in "-_.!*()" -> sb.append(
+                        ch
+                    )
+
                     ch == ' ' -> sb.append('+')
                     else -> sb.append('%').append("%02X".format(c))
                 }

@@ -1,8 +1,5 @@
 package com.github.livingwithhippos.phonarr.browser
 
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import com.github.livingwithhippos.phonarr.PhonarrApp
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -21,17 +18,20 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import com.github.livingwithhippos.phonarr.ui.theme.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.github.livingwithhippos.phonarr.PhonarrApp
 import com.github.livingwithhippos.phonarr.ui.theme.PhonarrTheme
+import com.github.livingwithhippos.phonarr.ui.theme.TextButton
 import kotlinx.coroutines.delay
 import java.net.URI
 
@@ -53,7 +53,11 @@ class ChallengeActivity : ComponentActivity() {
                 ChallengeScreen(url, userAgent) { solved ->
                     if (solved) {
                         CookieManager.getInstance().flush()
-                        Toast.makeText(this, "Check passed. Phonarr can search this site now.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            this,
+                            "Check passed. Phonarr can search this site now.",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                     finish()
                 }
@@ -91,7 +95,8 @@ private fun ChallengeScreen(url: String, userAgent: String, onDone: (Boolean) ->
                     onDone(true)
                     return@LaunchedEffect
                 }
-                status = "No check showing right now. You can go back, or browse to a search page if the site needs it."
+                status =
+                    "No check showing right now. You can go back, or browse to a search page if the site needs it."
             } else if (state.challenge) {
                 status = "Complete the check below if asked."
             }
@@ -102,12 +107,26 @@ private fun ChallengeScreen(url: String, userAgent: String, onDone: (Boolean) ->
         topBar = {
             TopAppBar(
                 title = { Text("Verify $host") },
-                actions = { TextButton(onClick = { onDone(BrowserPages.cookies(url).isNotEmpty()) }) { Text("Done") } },
+                actions = {
+                    TextButton(onClick = {
+                        onDone(
+                            BrowserPages.cookies(url).isNotEmpty()
+                        )
+                    }) { Text("Done") }
+                },
             )
         },
     ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
-            Text(status, Modifier.fillMaxWidth().padding(12.dp), style = MaterialTheme.typography.bodyMedium)
+        Column(Modifier
+            .padding(padding)
+            .fillMaxSize()) {
+            Text(
+                status,
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                style = MaterialTheme.typography.bodyMedium
+            )
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { ctx ->

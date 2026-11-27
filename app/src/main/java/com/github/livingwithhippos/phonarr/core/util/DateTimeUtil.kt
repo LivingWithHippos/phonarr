@@ -23,7 +23,8 @@ class InvalidDateException(message: String, cause: Throwable? = null) : Exceptio
 object DateTimeUtil {
 
     /** Format used to pass dates between filters and fields (RFC 1123 with numeric offset). */
-    val RFC1123Z: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH)
+    val RFC1123Z: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH)
 
     var zone: ZoneId = ZoneId.systemDefault()
     var clock: () -> ZonedDateTime = { ZonedDateTime.now(zone) }
@@ -32,7 +33,8 @@ object DateTimeUtil {
     private val todayRegex = Regex("(?i)\\btoday(?:[\\s,]+(?:at)?\\s*|[\\s,]*|$)")
     private val tomorrowRegex = Regex("(?i)\\btomorrow(?:[\\s,]+(?:at)?\\s*|[\\s,]*|$)")
     private val yesterdayRegex = Regex("(?i)\\byesterday(?:[\\s,]+(?:at)?\\s*|[\\s,]*|$)")
-    private val daysOfWeekRegex = Regex("(?i)\\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\\s+at\\s+")
+    private val daysOfWeekRegex =
+        Regex("(?i)\\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\\s+at\\s+")
     private val missingYearRegex = Regex("^(\\d{1,2}-\\d{1,2})(\\s|$)")
     private val missingYearRegex2 = Regex("^(\\d{1,2}\\s+\\w{3})\\s+(\\d{1,2}:\\d{1,2}.*)$")
     private val timeAgoPartRegex = Regex("\\s*?([\\d.]+)\\s*?([^\\d\\s.]+)\\s*?")
@@ -130,26 +132,65 @@ object DateTimeUtil {
     private val commonPatterns = listOf(
         "yyyy-M-d'T'H:m:s[.SSSSSSSSS][.SSSSSS][.SSS]XXX",
         "yyyy-M-d'T'H:m:s[.SSSSSSSSS][.SSSSSS][.SSS]",
-        "yyyy-M-d H:m:s XX", "yyyy-M-d H:m:s XXX", "yyyy-M-d H:m:s", "yyyy-M-d H:m", "yyyy-M-d h:m a", "yyyy-M-d",
-        "yyyy/M/d H:m:s", "yyyy/M/d H:m", "yyyy/M/d",
-        "yyyy.M.d H:m:s", "yyyy.M.d H:m", "yyyy.M.d",
-        "d.M.yyyy H:m:s", "d.M.yyyy H:m", "d.M.yyyy",
-        "EEE, d MMM yyyy H:m:s Z", "EEE, d MMM yyyy H:m:s z", "EEE, d MMM yyyy H:m:s",
-        "EEE MMM d H:m:s z yyyy", "EEE MMM d yyyy H:m:s",
-        "d MMM yyyy H:m:s", "d MMM yyyy H:m", "d MMM yyyy h:m a", "d MMM yyyy",
-        "d MMMM yyyy H:m:s", "d MMMM yyyy H:m", "d MMMM yyyy",
-        "d-MMM-yyyy H:m", "d-MMM-yyyy", "d-MMM-yy",
-        "MMM d yyyy H:m:s", "MMM d yyyy H:m", "MMM d yyyy h:m a", "MMM d yyyy",
-        "MMMM d yyyy H:m", "MMMM d yyyy",
-        "EEE d MMM yyyy", "EEEE d MMMM yyyy", "MMM yyyy",
+        "yyyy-M-d H:m:s XX",
+        "yyyy-M-d H:m:s XXX",
+        "yyyy-M-d H:m:s",
+        "yyyy-M-d H:m",
+        "yyyy-M-d h:m a",
+        "yyyy-M-d",
+        "yyyy/M/d H:m:s",
+        "yyyy/M/d H:m",
+        "yyyy/M/d",
+        "yyyy.M.d H:m:s",
+        "yyyy.M.d H:m",
+        "yyyy.M.d",
+        "d.M.yyyy H:m:s",
+        "d.M.yyyy H:m",
+        "d.M.yyyy",
+        "EEE, d MMM yyyy H:m:s Z",
+        "EEE, d MMM yyyy H:m:s z",
+        "EEE, d MMM yyyy H:m:s",
+        "EEE MMM d H:m:s z yyyy",
+        "EEE MMM d yyyy H:m:s",
+        "d MMM yyyy H:m:s",
+        "d MMM yyyy H:m",
+        "d MMM yyyy h:m a",
+        "d MMM yyyy",
+        "d MMMM yyyy H:m:s",
+        "d MMMM yyyy H:m",
+        "d MMMM yyyy",
+        "d-MMM-yyyy H:m",
+        "d-MMM-yyyy",
+        "d-MMM-yy",
+        "MMM d yyyy H:m:s",
+        "MMM d yyyy H:m",
+        "MMM d yyyy h:m a",
+        "MMM d yyyy",
+        "MMMM d yyyy H:m",
+        "MMMM d yyyy",
+        "EEE d MMM yyyy",
+        "EEEE d MMMM yyyy",
+        "MMM yyyy",
     )
     private val usPatterns = listOf(
-        "M/d/yyyy H:m:s", "M/d/yyyy h:m:s a", "M/d/yyyy H:m", "M/d/yyyy h:m a", "M/d/yyyy", "M/d/yy",
-        "M-d-yyyy H:m", "M-d-yyyy",
+        "M/d/yyyy H:m:s",
+        "M/d/yyyy h:m:s a",
+        "M/d/yyyy H:m",
+        "M/d/yyyy h:m a",
+        "M/d/yyyy",
+        "M/d/yy",
+        "M-d-yyyy H:m",
+        "M-d-yyyy",
     )
     private val ukPatterns = listOf(
-        "d/M/yyyy H:m:s", "d/M/yyyy h:m:s a", "d/M/yyyy H:m", "d/M/yyyy h:m a", "d/M/yyyy", "d/M/yy",
-        "d-M-yyyy H:m", "d-M-yyyy",
+        "d/M/yyyy H:m:s",
+        "d/M/yyyy h:m:s a",
+        "d/M/yyyy H:m",
+        "d/M/yyyy h:m a",
+        "d/M/yyyy",
+        "d/M/yy",
+        "d-M-yyyy H:m",
+        "d-M-yyyy",
     )
     private val searchRegexes = listOf(
         Regex("\\d{4}-\\d{1,2}-\\d{1,2}(?:[ T]\\d{1,2}:\\d{2}(?::\\d{2})?)?"),
@@ -163,12 +204,14 @@ object DateTimeUtil {
 
     private fun formatter(pattern: String): DateTimeFormatter = synchronized(formatterCache) {
         formatterCache.getOrPut(pattern) {
-            DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern(pattern).toFormatter(Locale.ENGLISH)
+            DateTimeFormatterBuilder().parseCaseInsensitive().appendPattern(pattern)
+                .toFormatter(Locale.ENGLISH)
         }
     }
 
     fun fromFuzzyTime(input: String, format: String? = null): ZonedDateTime {
-        var str = input.trim().replace(ordinalRegex, "$1").replace(",", " ").replace(Regex("\\s+"), " ")
+        var str =
+            input.trim().replace(ordinalRegex, "$1").replace(",", " ").replace(Regex("\\s+"), " ")
         var forcedZone: ZoneId? = null
         Regex("(?i)\\s(utc|gmt)$").find(str)?.let {
             forcedZone = ZoneOffset.UTC
@@ -197,8 +240,10 @@ object DateTimeUtil {
             t.isSupported(ChronoField.YEAR) -> t.get(ChronoField.YEAR)
             else -> now.year
         }
-        val month = if (t.isSupported(ChronoField.MONTH_OF_YEAR)) t.get(ChronoField.MONTH_OF_YEAR) else 1
-        val day = if (t.isSupported(ChronoField.DAY_OF_MONTH)) t.get(ChronoField.DAY_OF_MONTH) else 1
+        val month =
+            if (t.isSupported(ChronoField.MONTH_OF_YEAR)) t.get(ChronoField.MONTH_OF_YEAR) else 1
+        val day =
+            if (t.isSupported(ChronoField.DAY_OF_MONTH)) t.get(ChronoField.DAY_OF_MONTH) else 1
         val time = if (t.isSupported(ChronoField.HOUR_OF_DAY)) {
             LocalTime.of(
                 t.get(ChronoField.HOUR_OF_DAY),
@@ -215,14 +260,45 @@ object DateTimeUtil {
     // --- Go layouts ---
 
     private val goTokens = listOf(
-        "January" to "MMMM", "Jan" to "MMM", "Monday" to "EEEE", "Mon" to "EEE", "MST" to "z",
-        "2006" to "yyyy", "-07:00:00" to "XXXXX", "-0700" to "xx", "-07:00" to "xxx", "-07" to "x",
-        "Z07:00" to "XXX", "Z0700" to "XX", "Z07" to "X",
-        ".000000000" to ".SSSSSSSSS", ".000000" to ".SSSSSS", ".000" to ".SSS", ".00" to ".SS", ".0" to ".S",
-        ".999999999" to "[.SSSSSSSSS]", ".999999" to "[.SSSSSS]", ".999" to "[.SSS]", ".99" to "[.SS]", ".9" to "[.S]",
-        "002" to "DDD", "_2" to "d", "06" to "yy", "01" to "MM", "02" to "dd", "15" to "HH", "03" to "hh",
-        "04" to "mm", "05" to "ss", "PM" to "a", "pm" to "a",
-        "1" to "M", "2" to "d", "3" to "h", "4" to "m", "5" to "s",
+        "January" to "MMMM",
+        "Jan" to "MMM",
+        "Monday" to "EEEE",
+        "Mon" to "EEE",
+        "MST" to "z",
+        "2006" to "yyyy",
+        "-07:00:00" to "XXXXX",
+        "-0700" to "xx",
+        "-07:00" to "xxx",
+        "-07" to "x",
+        "Z07:00" to "XXX",
+        "Z0700" to "XX",
+        "Z07" to "X",
+        ".000000000" to ".SSSSSSSSS",
+        ".000000" to ".SSSSSS",
+        ".000" to ".SSS",
+        ".00" to ".SS",
+        ".0" to ".S",
+        ".999999999" to "[.SSSSSSSSS]",
+        ".999999" to "[.SSSSSS]",
+        ".999" to "[.SSS]",
+        ".99" to "[.SS]",
+        ".9" to "[.S]",
+        "002" to "DDD",
+        "_2" to "d",
+        "06" to "yy",
+        "01" to "MM",
+        "02" to "dd",
+        "15" to "HH",
+        "03" to "hh",
+        "04" to "mm",
+        "05" to "ss",
+        "PM" to "a",
+        "pm" to "a",
+        "1" to "M",
+        "2" to "d",
+        "3" to "h",
+        "4" to "m",
+        "5" to "s",
     )
 
     /** Converts a Go time layout (e.g. "2006-01-02 15:04") into a java.time pattern. */
@@ -239,6 +315,7 @@ object DateTimeUtil {
             }
             literal.clear()
         }
+
         var i = 0
         while (i < layout.length) {
             val token = goTokens.firstOrNull { layout.startsWith(it.first, i) }
@@ -268,7 +345,8 @@ object DateTimeUtil {
             return toZoned(formatter(pattern).parse(date.replace(Regex(" {2,}"), " ")), null)
         } catch (e: Exception) {
             throw InvalidDateException(
-                "Error while parsing DateTime \"$date\", using layout \"$layout\" ($pattern): ${e.message}", e,
+                "Error while parsing DateTime \"$date\", using layout \"$layout\" ($pattern): ${e.message}",
+                e,
             )
         }
     }

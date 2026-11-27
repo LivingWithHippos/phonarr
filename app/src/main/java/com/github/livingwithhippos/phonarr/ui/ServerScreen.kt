@@ -1,21 +1,28 @@
 package com.github.livingwithhippos.phonarr.ui
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import com.github.livingwithhippos.phonarr.ui.theme.Button
-import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import com.github.livingwithhippos.phonarr.ui.theme.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import com.github.livingwithhippos.phonarr.ui.theme.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,27 +32,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Switch
-import androidx.compose.ui.semantics.Role
-import com.github.livingwithhippos.phonarr.core.util.lanAddresses
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Surface
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.unit.dp
 import com.github.livingwithhippos.phonarr.core.data.AppSettings
+import com.github.livingwithhippos.phonarr.core.util.lanAddresses
+import com.github.livingwithhippos.phonarr.ui.theme.Button
+import com.github.livingwithhippos.phonarr.ui.theme.OutlinedButton
 import com.github.livingwithhippos.phonarr.ui.theme.PhonarrTheme
+import com.github.livingwithhippos.phonarr.ui.theme.TextButton
 import java.text.DateFormat
 import java.util.Date
 
@@ -113,14 +113,19 @@ internal fun ServerContent(
             title = { Text("Create a new API key?") },
             text = { Text("Apps using the current key will stop working until you give them the new one.") },
             confirmButton = {
-                TextButton(onClick = { actions.onRegenerateApiKey(); confirmNewKey = false }) { Text("New key") }
+                TextButton(onClick = {
+                    actions.onRegenerateApiKey(); confirmNewKey = false
+                }) { Text("New key") }
             },
             dismissButton = { TextButton(onClick = { confirmNewKey = false }) { Text("Cancel") } },
         )
     }
 
     Column(
-        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         OutlinedCard(Modifier.fillMaxWidth()) {
@@ -131,7 +136,10 @@ internal fun ServerContent(
                     StatusChip(running)
                 }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     OutlinedTextField(
                         value = port,
                         onValueChange = { port = it.filter(Char::isDigit).take(5) },
@@ -141,34 +149,47 @@ internal fun ServerContent(
                         modifier = Modifier.weight(1f),
                     )
                     TextButton(
-                        enabled = port.toIntOrNull()?.let { it in 1024..65535 && it != settings.port } == true,
+                        enabled = port.toIntOrNull()
+                            ?.let { it in 1024..65535 && it != settings.port } == true,
                         onClick = { actions.onSetPort(port.toInt()) },
                         // the field reserves 8dp above its box for the floating label: offset to center on the box
                         modifier = Modifier.padding(top = 8.dp),
                     ) { Text("Set") }
                 }
                 Row(
-                    Modifier.fillMaxWidth().toggleable(
-                        value = settings.listenOnNetwork,
-                        onValueChange = actions.onSetListenOnNetwork,
-                        role = Role.Switch,
-                    ),
+                    Modifier
+                        .fillMaxWidth()
+                        .toggleable(
+                            value = settings.listenOnNetwork,
+                            onValueChange = actions.onSetListenOnNetwork,
+                            role = Role.Switch,
+                        ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text("Allow other devices", style = MaterialTheme.typography.bodyLarge)
                         Text(
                             "Listens on all network interfaces (0.0.0.0). Anyone on your network can reach the server: " +
-                                "the API key is the only protection and traffic isn't encrypted.",
+                                    "the API key is the only protection and traffic isn't encrypted.",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
-                    Switch(checked = settings.listenOnNetwork, onCheckedChange = null, modifier = Modifier.padding(start = 12.dp))
+                    Switch(
+                        checked = settings.listenOnNetwork,
+                        onCheckedChange = null,
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
                 }
                 if (running) {
-                    OutlinedButton(onClick = actions.onStop, modifier = Modifier.fillMaxWidth()) { Text("Stop") }
+                    OutlinedButton(
+                        onClick = actions.onStop,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Stop") }
                 } else {
-                    Button(onClick = actions.onStart, modifier = Modifier.fillMaxWidth()) { Text("Start") }
+                    Button(
+                        onClick = actions.onStart,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Start") }
                 }
             }
         }
@@ -183,18 +204,27 @@ internal fun ServerContent(
                     TextButton(onClick = { actions.onCopy(settings.apiKey) }) { Text("Copy key") }
                     TextButton(onClick = { confirmNewKey = true }) { Text("New key") }
                 }
-                if (settings.listenOnNetwork) Text("On this phone", style = MaterialTheme.typography.labelLarge)
+                if (settings.listenOnNetwork) Text(
+                    "On this phone",
+                    style = MaterialTheme.typography.labelLarge
+                )
                 CopyableUrl("http://127.0.0.1:${settings.port}", actions.onCopy)
                 if (settings.listenOnNetwork) {
                     Text("From other devices", style = MaterialTheme.typography.labelLarge)
                     if (lanAddresses.isEmpty()) {
-                        Text("Not connected to a local network", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "Not connected to a local network",
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                     lanAddresses.forEach { ip ->
                         CopyableUrl("http://$ip:${settings.port}", actions.onCopy)
                     }
                 }
-                Text("$enabledIndexers enabled indexers", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    "$enabledIndexers enabled indexers",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
 
@@ -204,10 +234,21 @@ internal fun ServerContent(
                 val last = settings.lastDefinitionsUpdate
                 Text(
                     "$definitionsCount sites available" +
-                        if (last > 0) ", updated ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(last))}" else "",
+                            if (last > 0) ", updated ${
+                                DateFormat.getDateTimeInstance(
+                                    DateFormat.SHORT,
+                                    DateFormat.SHORT
+                                ).format(Date(last))
+                            }" else "",
                 )
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = actions.onUpdateDefinitions, enabled = !updatingDefinitions) { Text("Update definitions") }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = actions.onUpdateDefinitions,
+                        enabled = !updatingDefinitions
+                    ) { Text("Update definitions") }
                     if (updatingDefinitions) CircularProgressIndicator(Modifier.padding(4.dp))
                 }
                 Text(
@@ -239,11 +280,15 @@ private fun StatusChip(running: Boolean) {
         modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = description },
     ) {
         Row(
-            Modifier.heightIn(min = 32.dp).padding(horizontal = 12.dp),
+            Modifier
+                .heightIn(min = 32.dp)
+                .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (running) Box(Modifier.size(8.dp).background(MaterialTheme.colorScheme.primary))
+            if (running) Box(Modifier
+                .size(8.dp)
+                .background(MaterialTheme.colorScheme.primary))
             Text(if (running) "Running" else "Stopped", style = MaterialTheme.typography.labelLarge)
         }
     }
@@ -273,7 +318,8 @@ private fun ServerStoppedPreview() {
 @PreviewLightDark
 @Composable
 private fun ServerRunningPreview() {
-    val settings = AppSettings(PREVIEW_KEY, listenOnNetwork = true, lastDefinitionsUpdate = 1_764_000_000_000)
+    val settings =
+        AppSettings(PREVIEW_KEY, listenOnNetwork = true, lastDefinitionsUpdate = 1_764_000_000_000)
     PhonarrTheme(AppSettings(PREVIEW_KEY)) {
         Surface {
             ServerContent(

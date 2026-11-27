@@ -17,7 +17,8 @@ sealed interface YNode {
     data class YList(val items: List<YNode>) : YNode
     data class YMap(val entries: List<Pair<String, YNode>>) : YNode {
         /** Case-insensitive lookup (YamlDotNet maps camelCase names; definitions are not always consistent). */
-        operator fun get(key: String): YNode? = entries.lastOrNull { it.first.equals(key, ignoreCase = true) }?.second
+        operator fun get(key: String): YNode? =
+            entries.lastOrNull { it.first.equals(key, ignoreCase = true) }?.second
     }
 }
 
@@ -47,7 +48,9 @@ object Yaml {
                     if (key == "<<") {
                         when (value) {
                             is YNode.YMap -> merges += value
-                            is YNode.YList -> value.items.filterIsInstance<YNode.YMap>().forEach { merges += it }
+                            is YNode.YList -> value.items.filterIsInstance<YNode.YMap>()
+                                .forEach { merges += it }
+
                             else -> {}
                         }
                     } else {
@@ -59,6 +62,7 @@ object Yaml {
                 }
                 YNode.YMap(entries)
             }
+
             else -> YNode.Scalar(null)
         }
         seen[node] = result
@@ -83,9 +87,11 @@ internal fun YNode?.strList(): List<String>? = when (this) {
     else -> null
 }
 
-internal fun YNode?.strMap(): Map<String, String?>? = (this as? YNode.YMap)?.entries?.associate { it.first to it.second.str() }
+internal fun YNode?.strMap(): Map<String, String?>? =
+    (this as? YNode.YMap)?.entries?.associate { it.first to it.second.str() }
 
-internal fun YNode?.pairs(): List<Pair<String, String?>>? = (this as? YNode.YMap)?.entries?.map { it.first to it.second.str() }
+internal fun YNode?.pairs(): List<Pair<String, String?>>? =
+    (this as? YNode.YMap)?.entries?.map { it.first to it.second.str() }
 
 internal fun YNode?.listMap(): Map<String, List<String>>? =
     (this as? YNode.YMap)?.entries?.associate { it.first to (it.second.strList() ?: emptyList()) }

@@ -2,22 +2,33 @@ package com.github.livingwithhippos.phonarr.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import com.github.livingwithhippos.phonarr.ui.theme.Button
-import androidx.compose.material3.OutlinedCard
-import com.github.livingwithhippos.phonarr.ui.theme.OutlinedButton
-import com.github.livingwithhippos.phonarr.ui.theme.TextButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,39 +39,28 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.dp
-import com.github.livingwithhippos.phonarr.core.data.BackupFile
-import com.github.livingwithhippos.phonarr.core.data.SiteBrowser
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.ui.text.input.KeyboardType
-import com.github.livingwithhippos.phonarr.core.data.DohProvider
-import com.github.livingwithhippos.phonarr.core.net.SwitchableDns
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.size
-import androidx.compose.ui.text.font.FontWeight
-import com.github.livingwithhippos.phonarr.core.data.ThemeColor
-import com.github.livingwithhippos.phonarr.core.data.ThemeMode
-import com.github.livingwithhippos.phonarr.ui.theme.FilterChip
-import com.github.livingwithhippos.phonarr.ui.theme.shouldUseDarkTheme
-import com.github.livingwithhippos.phonarr.ui.theme.swatchColor
-import androidx.compose.material3.Surface
-import androidx.compose.ui.tooling.preview.PreviewLightDark
-import com.github.livingwithhippos.phonarr.core.data.AppSettings
-import com.github.livingwithhippos.phonarr.ui.theme.PhonarrTheme
-import androidx.annotation.DrawableRes
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Icon
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.unit.dp
 import com.github.livingwithhippos.phonarr.R
+import com.github.livingwithhippos.phonarr.core.data.AppSettings
+import com.github.livingwithhippos.phonarr.core.data.BackupFile
+import com.github.livingwithhippos.phonarr.core.data.DohProvider
+import com.github.livingwithhippos.phonarr.core.data.SiteBrowser
+import com.github.livingwithhippos.phonarr.core.data.ThemeColor
+import com.github.livingwithhippos.phonarr.core.data.ThemeMode
+import com.github.livingwithhippos.phonarr.core.net.SwitchableDns
+import com.github.livingwithhippos.phonarr.ui.theme.Button
+import com.github.livingwithhippos.phonarr.ui.theme.FilterChip
+import com.github.livingwithhippos.phonarr.ui.theme.OutlinedButton
+import com.github.livingwithhippos.phonarr.ui.theme.PhonarrTheme
+import com.github.livingwithhippos.phonarr.ui.theme.TextButton
+import com.github.livingwithhippos.phonarr.ui.theme.shouldUseDarkTheme
+import com.github.livingwithhippos.phonarr.ui.theme.swatchColor
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -72,12 +72,14 @@ fun SettingsScreen(vm: MainViewModel) {
     val scope = rememberCoroutineScope()
     var pendingRestore by remember { mutableStateOf<BackupFile?>(null) }
 
-    val createBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
-        uri?.let(vm::writeBackup)
-    }
-    val openBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) scope.launch { pendingRestore = vm.readBackup(uri) }
-    }
+    val createBackup =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            uri?.let(vm::writeBackup)
+        }
+    val openBackup =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) scope.launch { pendingRestore = vm.readBackup(uri) }
+        }
 
     val uriHandler = LocalUriHandler.current
     SettingsContent(
@@ -89,7 +91,15 @@ fun SettingsScreen(vm: MainViewModel) {
         actions = SettingsActions(
             onCreateBackup = { createBackup.launch("phonarr-backup-${LocalDate.now()}.json") },
             // some file managers don't report .json files as application/json
-            onOpenBackup = { openBackup.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
+            onOpenBackup = {
+                openBackup.launch(
+                    arrayOf(
+                        "application/json",
+                        "text/plain",
+                        "application/octet-stream"
+                    )
+                )
+            },
             onConfirmRestore = { vm.restore(it); pendingRestore = null },
             onDismissRestore = { pendingRestore = null },
             onSetOpenSiteIn = vm::setOpenSiteIn,
@@ -141,7 +151,7 @@ internal fun SettingsContent(
             text = {
                 Text(
                     "Replace your $indexerCount indexers with the ${backup.indexers.size} from this backup? " +
-                        "Your settings and API key are replaced too.",
+                            "Your settings and API key are replaced too.",
                 )
             },
             confirmButton = {
@@ -152,14 +162,22 @@ internal fun SettingsContent(
     }
 
     Column(
-        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         AppearanceCard(settings, actions)
         OutlinedCard(Modifier.fillMaxWidth()) {
             Row(
-                Modifier.fillMaxWidth()
-                    .toggleable(value = settings.detailedResults, onValueChange = actions.onSetDetailedResults, role = Role.Switch)
+                Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = settings.detailedResults,
+                        onValueChange = actions.onSetDetailedResults,
+                        role = Role.Switch
+                    )
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -167,17 +185,29 @@ internal fun SettingsContent(
                     Text("Detailed results", style = MaterialTheme.typography.titleMedium)
                     Text(
                         "Show search results as cards. Tapping one opens its details, with options to open, " +
-                            "share or save the magnet link and the torrent file.",
+                                "share or save the magnet link and the torrent file.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                Switch(checked = settings.detailedResults, onCheckedChange = null, modifier = Modifier.padding(start = 12.dp))
+                Switch(
+                    checked = settings.detailedResults,
+                    onCheckedChange = null,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
             }
         }
         OutlinedCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp).selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                Modifier
+                    .padding(16.dp)
+                    .selectableGroup(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text("Open site button", style = MaterialTheme.typography.titleMedium)
-                Text("Where the indexer screen opens a site.", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    "Where the indexer screen opens a site.",
+                    style = MaterialTheme.typography.bodySmall
+                )
                 RadioOption(
                     "In-app browser",
                     "Cookies from the site, such as a passed Cloudflare check, are reused by Phonarr's searches.",
@@ -196,7 +226,7 @@ internal fun SettingsContent(
                 Text("Backup", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Saves your indexers and settings to a file. The file contains your site logins and API key " +
-                        "in plain text: keep it somewhere private.",
+                            "in plain text: keep it somewhere private.",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -216,7 +246,10 @@ private const val DONATE_GITHUB_URL = "https://github.com/LivingWithHippos/phona
 
 @Composable
 private fun CardTitle(@DrawableRes icon: Int, title: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         Icon(
             painter = painterResource(icon),
             contentDescription = null,
@@ -230,7 +263,11 @@ private fun CardTitle(@DrawableRes icon: Int, title: String) {
 @Composable
 private fun OpenInNewIcon() {
     Spacer(Modifier.size(8.dp))
-    Icon(painter = painterResource(R.drawable.ic_open_in_new), contentDescription = null, modifier = Modifier.size(16.dp))
+    Icon(
+        painter = painterResource(R.drawable.ic_open_in_new),
+        contentDescription = null,
+        modifier = Modifier.size(16.dp)
+    )
 }
 
 @Composable
@@ -250,11 +287,17 @@ private fun SupportCard(actions: SettingsActions) {
             )
             Spacer(Modifier.height(4.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { actions.onOpenLink(DONATE_KOFI_URL) }, modifier = Modifier.weight(1f)) {
+                Button(
+                    onClick = { actions.onOpenLink(DONATE_KOFI_URL) },
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text("Ko-fi")
                     OpenInNewIcon()
                 }
-                OutlinedButton(onClick = { actions.onOpenLink(DONATE_GITHUB_URL) }, modifier = Modifier.weight(1f)) {
+                OutlinedButton(
+                    onClick = { actions.onOpenLink(DONATE_GITHUB_URL) },
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text("GitHub")
                     OpenInNewIcon()
                 }
@@ -268,14 +311,21 @@ private fun AboutCard(versionName: String, actions: SettingsActions) {
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             CardTitle(R.drawable.ic_info, "About")
-            Text("Version $versionName", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                "Version $versionName",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
             Text(
                 "Phonarr is open source: contributions to the code are welcome on GitHub.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(4.dp))
-            OutlinedButton(onClick = { actions.onOpenLink(REPOSITORY_URL) }, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = { actions.onOpenLink(REPOSITORY_URL) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text("Contribute on GitHub")
                 OpenInNewIcon()
             }
@@ -288,10 +338,21 @@ private fun AboutCard(versionName: String, actions: SettingsActions) {
 private fun AppearanceCard(settings: AppSettings, actions: SettingsActions) {
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Appearance", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                "Appearance",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
 
-            Text("Dark mode", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                "Dark mode",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 ThemeMode.entries.forEach { mode ->
                     FilterChip(
                         selected = settings.themeMode == mode,
@@ -301,9 +362,16 @@ private fun AppearanceCard(settings: AppSettings, actions: SettingsActions) {
                 }
             }
 
-            Text("Color", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            Text(
+                "Color",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
             val dark = shouldUseDarkTheme(settings.themeMode)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 ThemeColor.entries.forEach { color ->
                     val swatch = color.swatchColor(dark)
                     FilterChip(
@@ -312,7 +380,9 @@ private fun AppearanceCard(settings: AppSettings, actions: SettingsActions) {
                         leadingIcon = swatch?.let {
                             {
                                 Box(
-                                    Modifier.size(12.dp).background(it)
+                                    Modifier
+                                        .size(12.dp)
+                                        .background(it)
                                         .border(1.dp, MaterialTheme.colorScheme.outline),
                                 )
                             }
@@ -323,19 +393,32 @@ private fun AppearanceCard(settings: AppSettings, actions: SettingsActions) {
             }
 
             Row(
-                Modifier.fillMaxWidth()
-                    .toggleable(value = settings.standardFont, onValueChange = actions.onSetStandardFont, role = Role.Switch),
+                Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = settings.standardFont,
+                        onValueChange = actions.onSetStandardFont,
+                        role = Role.Switch
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Standard font", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Standard font",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
                     Text(
                         "Use the system font instead of monospace.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Switch(checked = settings.standardFont, onCheckedChange = null, modifier = Modifier.padding(start = 12.dp))
+                Switch(
+                    checked = settings.standardFont,
+                    onCheckedChange = null,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
             }
         }
     }
@@ -366,19 +449,28 @@ private fun DnsCard(settings: AppSettings, testing: Boolean, actions: SettingsAc
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
-                Modifier.fillMaxWidth()
-                    .toggleable(value = settings.dohEnabled, onValueChange = actions.onSetDohEnabled, role = Role.Switch),
+                Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = settings.dohEnabled,
+                        onValueChange = actions.onSetDohEnabled,
+                        role = Role.Switch
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
                     Text("DNS over HTTPS", style = MaterialTheme.typography.titleMedium)
                     Text(
                         "Looks up site addresses through an encrypted provider instead of your network's DNS. " +
-                            "Helps with sites blocked by DNS. Doesn't apply to the in-app browser.",
+                                "Helps with sites blocked by DNS. Doesn't apply to the in-app browser.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                Switch(checked = settings.dohEnabled, onCheckedChange = null, modifier = Modifier.padding(start = 12.dp))
+                Switch(
+                    checked = settings.dohEnabled,
+                    onCheckedChange = null,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
             }
             if (settings.dohEnabled) {
                 Column(Modifier.selectableGroup()) {
@@ -417,9 +509,17 @@ private fun DnsCard(settings: AppSettings, testing: Boolean, actions: SettingsAc
 }
 
 @Composable
-private fun RadioOption(title: String, description: String, selected: Boolean, onSelect: () -> Unit) {
+private fun RadioOption(
+    title: String,
+    description: String,
+    selected: Boolean,
+    onSelect: () -> Unit
+) {
     Row(
-        Modifier.fillMaxWidth().selectable(selected = selected, onClick = onSelect, role = Role.RadioButton).padding(vertical = 4.dp),
+        Modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, onClick = onSelect, role = Role.RadioButton)
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(selected = selected, onClick = null)
@@ -441,7 +541,14 @@ private fun SettingsPreview() {
     )
     PhonarrTheme(settings) {
         Surface {
-            SettingsContent(settings, versionName = "1.0", indexerCount = 12, testingDoh = false, pendingRestore = null, actions = SettingsActions())
+            SettingsContent(
+                settings,
+                versionName = "1.0",
+                indexerCount = 12,
+                testingDoh = false,
+                pendingRestore = null,
+                actions = SettingsActions()
+            )
         }
     }
 }

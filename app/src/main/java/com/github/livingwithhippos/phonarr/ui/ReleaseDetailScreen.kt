@@ -67,10 +67,11 @@ fun ReleaseDetailScreen(vm: MainViewModel, release: ReleaseInfo) {
     var downloadIsMagnet by remember(release) { mutableStateOf(false) }
     var loading by remember(release) { mutableStateOf(false) }
 
-    val saveTorrent = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(TORRENT_MIME)) { uri ->
-        val file = torrent
-        if (uri != null && file != null) vm.saveTorrent(file.file, uri)
-    }
+    val saveTorrent =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(TORRENT_MIME)) { uri ->
+            val file = torrent
+            if (uri != null && file != null) vm.saveTorrent(file.file, uri)
+        }
 
     /** Downloads the .torrent once, then runs [block] with it. */
     fun withTorrent(block: (ReleaseFile.Torrent) -> Unit) {
@@ -79,12 +80,16 @@ fun ReleaseDetailScreen(vm: MainViewModel, release: ReleaseInfo) {
         loading = true
         scope.launch {
             when (val f = vm.fetchRelease(release, preferMagnet = false)) {
-                is ReleaseFile.Torrent -> { torrent = f; block(f) }
+                is ReleaseFile.Torrent -> {
+                    torrent = f; block(f)
+                }
+
                 is ReleaseFile.Magnet -> {
                     magnet = f.uri
                     downloadIsMagnet = true
                     vm.showMessage("This site gives a magnet link instead of a torrent file")
                 }
+
                 null -> Unit
             }
             loading = false
@@ -118,7 +123,8 @@ fun ReleaseDetailScreen(vm: MainViewModel, release: ReleaseInfo) {
             onShareMagnet = {
                 start(
                     Intent.createChooser(
-                        Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, it),
+                        Intent(Intent.ACTION_SEND).setType("text/plain")
+                            .putExtra(Intent.EXTRA_TEXT, it),
                         "Share magnet link",
                     ),
                 )
@@ -176,7 +182,8 @@ data class ReleaseDetailActions(
     val onOpenWeb: (String) -> Unit = {},
 )
 
-private val publishFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+private val publishFormat =
+    DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
 
 @Composable
 internal fun ReleaseDetailContent(
@@ -187,14 +194,20 @@ internal fun ReleaseDetailContent(
     actions: ReleaseDetailActions,
 ) {
     Column(
-        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SelectionContainer {
                 Text(release.title ?: "Untitled", style = MaterialTheme.typography.titleLarge)
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 release.indexerName?.let { InfoTag(it, MaterialTheme.colorScheme.primary) }
                 InfoTag(if (release.indexerPrivacy.equals("public", true)) "Public" else "Private")
             }
@@ -207,14 +220,23 @@ internal fun ReleaseDetailContent(
             Section("Magnet link") {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { actions.onOpenMagnet(magnet) }) { Text("Open") }
-                    OutlinedButton(onClick = { actions.onCopy("Magnet link", magnet) }) { Text("Copy") }
+                    OutlinedButton(onClick = {
+                        actions.onCopy(
+                            "Magnet link",
+                            magnet
+                        )
+                    }) { Text("Copy") }
                     OutlinedButton(onClick = { actions.onShareMagnet(magnet) }) { Text("Share") }
                 }
                 release.infoHash?.takeIf { it.isNotBlank() }?.let { hash ->
                     Text("Info hash", style = MaterialTheme.typography.labelLarge)
                     Row {
                         SelectionContainer(Modifier.weight(1f)) {
-                            Text(hash, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                hash,
+                                fontFamily = FontFamily.Monospace,
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                         TextButton(onClick = { actions.onCopy("Info hash", hash) }) { Text("Copy") }
                     }
@@ -231,8 +253,14 @@ internal fun ReleaseDetailContent(
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val enabled = !loading
                     Button(onClick = actions.onOpenTorrent, enabled = enabled) { Text("Open") }
-                    OutlinedButton(onClick = actions.onShareTorrent, enabled = enabled) { Text("Share") }
-                    OutlinedButton(onClick = actions.onSaveTorrent, enabled = enabled) { Text("Save") }
+                    OutlinedButton(
+                        onClick = actions.onShareTorrent,
+                        enabled = enabled
+                    ) { Text("Share") }
+                    OutlinedButton(
+                        onClick = actions.onSaveTorrent,
+                        enabled = enabled
+                    ) { Text("Save") }
                 }
             }
         }
@@ -264,13 +292,20 @@ internal fun ReleaseDetailContent(
                     links.forEach { link ->
                         OutlinedButton(
                             onClick = {
-                                if (link.onIndexerSite) actions.onOpenSitePage(link.url) else actions.onOpenWeb(link.url)
+                                if (link.onIndexerSite) actions.onOpenSitePage(link.url) else actions.onOpenWeb(
+                                    link.url
+                                )
                             },
                         ) { Text(link.label) }
                     }
                 }
                 if (download != null) {
-                    TextButton(onClick = { actions.onCopy("Download link", download) }) { Text("Copy download link") }
+                    TextButton(onClick = {
+                        actions.onCopy(
+                            "Download link",
+                            download
+                        )
+                    }) { Text("Copy download link") }
                     Text(
                         "Private sites only accept this link with Phonarr's cookies: use the torrent file options instead.",
                         style = MaterialTheme.typography.bodySmall,
@@ -279,11 +314,12 @@ internal fun ReleaseDetailContent(
             }
         }
 
-        release.description?.let { Jsoup.parse(it).text() }?.takeIf { it.isNotBlank() }?.let { text ->
-            Section("Description") {
-                SelectionContainer { Text(text, style = MaterialTheme.typography.bodyMedium) }
+        release.description?.let { Jsoup.parse(it).text() }?.takeIf { it.isNotBlank() }
+            ?.let { text ->
+                Section("Description") {
+                    SelectionContainer { Text(text, style = MaterialTheme.typography.bodyMedium) }
+                }
             }
-        }
     }
 }
 
@@ -326,11 +362,24 @@ private class LinkButton(val label: String, val url: String, val onIndexerSite: 
 
 private fun linkButtons(r: ReleaseInfo): List<LinkButton> = buildList {
     r.infoUrl?.let { add(LinkButton("Details page", it, onIndexerSite = true)) }
-    r.commentUrl?.takeIf { it != r.infoUrl }?.let { add(LinkButton("Comments", it, onIndexerSite = true)) }
+    r.commentUrl?.takeIf { it != r.infoUrl }
+        ?.let { add(LinkButton("Comments", it, onIndexerSite = true)) }
     if (r.imdbId > 0) add(LinkButton("IMDb", imdbLink(r.imdbId), false))
     if (r.tmdbId > 0) add(LinkButton("TMDb", "https://www.themoviedb.org/movie/${r.tmdbId}", false))
-    if (r.tvdbId > 0) add(LinkButton("TVDB", "https://www.thetvdb.com/dereferrer/series/${r.tvdbId}", false))
-    if (r.tvMazeId > 0) add(LinkButton("TVmaze", "https://www.tvmaze.com/shows/${r.tvMazeId}", false))
+    if (r.tvdbId > 0) add(
+        LinkButton(
+            "TVDB",
+            "https://www.thetvdb.com/dereferrer/series/${r.tvdbId}",
+            false
+        )
+    )
+    if (r.tvMazeId > 0) add(
+        LinkButton(
+            "TVmaze",
+            "https://www.tvmaze.com/shows/${r.tvMazeId}",
+            false
+        )
+    )
 }
 
 @PreviewLightDark
@@ -339,7 +388,13 @@ private fun ReleaseDetailMagnetPreview() {
     val r = sampleReleases()[0]
     PhonarrTheme(AppSettings("preview")) {
         Surface {
-            ReleaseDetailContent(r, magnet = r.magnetUrl, hasTorrentFile = false, loading = false, actions = ReleaseDetailActions())
+            ReleaseDetailContent(
+                r,
+                magnet = r.magnetUrl,
+                hasTorrentFile = false,
+                loading = false,
+                actions = ReleaseDetailActions()
+            )
         }
     }
 }

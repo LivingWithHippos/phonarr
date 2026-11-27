@@ -67,7 +67,12 @@ object ProwlarrApi {
     )
 
     @Serializable
-    data class Category(val id: Int, val name: String?, val description: String? = null, val subCategories: List<Category> = emptyList())
+    data class Category(
+        val id: Int,
+        val name: String?,
+        val description: String? = null,
+        val subCategories: List<Category> = emptyList()
+    )
 
     /** Port of ReleaseResource. */
     @Serializable
@@ -142,7 +147,12 @@ object ProwlarrApi {
             infoUrl = r.infoUrl,
             posterUrl = r.posterUrl,
             indexerFlags = r.flags.toList(),
-            categories = r.categories.map { c -> Category(c.id, c.name, subCategories = c.subCategories.map { Category(it.id, it.name) }) },
+            categories = r.categories.map { c ->
+                Category(
+                    c.id,
+                    c.name,
+                    subCategories = c.subCategories.map { Category(it.id, it.name) })
+            },
             magnetUrl = r.magnetUrl,
             infoHash = r.infoHash,
             seeders = r.seeders,
@@ -152,6 +162,7 @@ object ProwlarrApi {
     }
 
     private val wordDelimiter = Regex("(\\s|\\.|,|_|-|=|'|\\|)+")
+
     // .NET's \w is Unicode; spelled out so accented letters survive on the JVM too
     private val punctuation = Regex("[^\\p{L}\\p{N}\\p{Mn}_\\s]")
     private val commonWords = Regex("\\b(a|an|the|and|or|of)\\b\\s?", RegexOption.IGNORE_CASE)

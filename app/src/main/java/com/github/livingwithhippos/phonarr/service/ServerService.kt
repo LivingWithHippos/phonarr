@@ -8,6 +8,11 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.ConnectivityManager
+import android.net.LinkProperties
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
@@ -17,19 +22,16 @@ import com.github.livingwithhippos.phonarr.R
 import com.github.livingwithhippos.phonarr.core.data.listenHost
 import com.github.livingwithhippos.phonarr.core.util.lanAddresses
 import com.github.livingwithhippos.phonarr.core.util.serverAddresses
-import android.net.ConnectivityManager
-import android.net.LinkProperties
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** Keeps the Torznab server alive while the user wants it running. */
 class ServerService : Service() {
-    @Volatile private var networkCallback: ConnectivityManager.NetworkCallback? = null
-    @Volatile private var lastText: String? = null
+    @Volatile
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    @Volatile
+    private var lastText: String? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -67,15 +69,21 @@ class ServerService : Service() {
             if (networkCallback == null || !_running.value) return@refresh
             val before = lastText
             val n = buildNotification(port, host)
-            if (lastText != before) getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, n)
+            if (lastText != before) getSystemService(NotificationManager::class.java).notify(
+                NOTIFICATION_ID,
+                n
+            )
         }
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) = refresh()
             override fun onLost(network: Network) = refresh()
-            override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) = refresh()
+            override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) =
+                refresh()
         }
         // without INTERNET, so a Wi-Fi with no internet access still counts
-        val request = NetworkRequest.Builder().removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).build()
+        val request =
+            NetworkRequest.Builder().removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
         runCatching { cm.registerNetworkCallback(request, callback) }
             .onSuccess { networkCallback = callback }
     }
@@ -83,7 +91,11 @@ class ServerService : Service() {
     private fun unwatchNetworks() {
         val callback = networkCallback ?: return
         networkCallback = null
-        runCatching { getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(callback) }
+        runCatching {
+            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(
+                callback
+            )
+        }
     }
 
     private fun stopServer() {
@@ -103,7 +115,8 @@ class ServerService : Service() {
 
     /** Builds the notification and remembers its text in [lastText]. */
     private fun buildNotification(port: Int, host: String): Notification {
-        val addresses = serverAddresses(host, port, if (host == "0.0.0.0") lanAddresses() else emptyList())
+        val addresses =
+            serverAddresses(host, port, if (host == "0.0.0.0") lanAddresses() else emptyList())
         val text = when {
             addresses.noNetwork -> getString(R.string.notification_no_network, addresses.primary)
             addresses.all.size > 1 -> getString(
@@ -111,18 +124,26 @@ class ServerService : Service() {
                 getString(R.string.notification_text, addresses.primary),
                 addresses.all.size - 1,
             )
+
             else -> getString(R.string.notification_text, addresses.primary)
         }
         lastText = text
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, getString(R.string.notification_channel), NotificationManager.IMPORTANCE_LOW),
+            NotificationChannel(
+                CHANNEL_ID,
+                getString(R.string.notification_channel),
+                NotificationManager.IMPORTANCE_LOW
+            ),
         )
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
         val stop = PendingIntent.getService(
-            this, 1, Intent(this, ServerService::class.java).setAction(ACTION_STOP), PendingIntent.FLAG_IMMUTABLE,
+            this,
+            1,
+            Intent(this, ServerService::class.java).setAction(ACTION_STOP),
+            PendingIntent.FLAG_IMMUTABLE,
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
@@ -130,7 +151,14 @@ class ServerService : Service() {
             .setContentText(text)
             .apply {
                 if (addresses.all.size > 1) {
-                    setStyle(NotificationCompat.BigTextStyle().bigText(getString(R.string.notification_text, addresses.all.joinToString(", "))))
+                    setStyle(
+                        NotificationCompat.BigTextStyle().bigText(
+                            getString(
+                                R.string.notification_text,
+                                addresses.all.joinToString(", ")
+                            )
+                        )
+                    )
                 }
             }
             .setOnlyAlertOnce(true)

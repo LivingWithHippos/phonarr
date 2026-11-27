@@ -76,8 +76,8 @@ class SwitchableDns(
         /** Names DNS over HTTPS can't or shouldn't resolve: IP literals and localhost. */
         private fun isLocal(hostname: String): Boolean =
             hostname.equals("localhost", ignoreCase = true) ||
-                hostname.endsWith(".localhost", ignoreCase = true) ||
-                IPV4.matches(hostname) ||
-                ':' in hostname
+                    hostname.endsWith(".localhost", ignoreCase = true) ||
+                    IPV4.matches(hostname) ||
+                    ':' in hostname
     }
 }

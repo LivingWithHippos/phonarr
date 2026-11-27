@@ -1,8 +1,8 @@
 package com.github.livingwithhippos.phonarr.ui
 
 import android.content.ActivityNotFoundException
-import android.content.Intent
 import android.content.ClipData
+import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,14 +12,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import com.github.livingwithhippos.phonarr.ui.theme.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,18 +39,15 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import com.github.livingwithhippos.phonarr.core.torznab.ReleaseInfo
-import kotlinx.coroutines.launch
-import androidx.compose.material3.Surface
-import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.github.livingwithhippos.phonarr.core.data.AppSettings
+import com.github.livingwithhippos.phonarr.core.torznab.ReleaseInfo
+import com.github.livingwithhippos.phonarr.ui.theme.Button
 import com.github.livingwithhippos.phonarr.ui.theme.PhonarrTheme
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -113,8 +113,16 @@ internal fun SearchContent(
 ) {
     var query by rememberSaveable { mutableStateOf("") }
 
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             OutlinedTextField(
                 value = query, onValueChange = { query = it },
                 label = { Text("Search all enabled indexers") },
@@ -131,13 +139,28 @@ internal fun SearchContent(
         }
         if (state.running) LinearProgressIndicator(Modifier.fillMaxWidth())
         state.errors.forEach { (name, err) ->
-            Text("$name: $err", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            Text(
+                "$name: $err",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
-        if (state.searched && !state.running) Text("${state.results.size} results", style = MaterialTheme.typography.labelMedium)
+        if (state.searched && !state.running) Text(
+            "${state.results.size} results",
+            style = MaterialTheme.typography.labelMedium
+        )
         if (detailed) {
-            LazyColumn(Modifier.fillMaxSize(), state = listState, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 items(state.results) { r ->
-                    ResultCard(r, onLongClick = { actions.onCopyMagnet(r) }) { actions.onOpenDetail(r) }
+                    ResultCard(r, onLongClick = { actions.onCopyMagnet(r) }) {
+                        actions.onOpenDetail(
+                            r
+                        )
+                    }
                 }
             }
         } else {
@@ -156,7 +179,8 @@ internal fun SearchContent(
 @Composable
 private fun ResultCard(r: ReleaseInfo, onLongClick: () -> Unit, onClick: () -> Unit) {
     OutlinedCard(
-        Modifier.fillMaxWidth()
+        Modifier
+            .fillMaxWidth()
             .combinedClickable(
                 onClick = onClick,
                 onClickLabel = "Show details",
@@ -165,7 +189,12 @@ private fun ResultCard(r: ReleaseInfo, onLongClick: () -> Unit, onClick: () -> U
             ),
     ) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(r.title ?: "", style = MaterialTheme.typography.titleSmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(
+                r.title ?: "",
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
             ReleaseTags(r)
         }
     }
@@ -177,8 +206,13 @@ private val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
 @Composable
 private fun ResultRow(r: ReleaseInfo, onLongClick: () -> Unit, onClick: () -> Unit) {
     Column(
-        Modifier.fillMaxWidth()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick, onLongClickLabel = "Copy magnet link")
+        Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+                onLongClickLabel = "Copy magnet link"
+            )
             .padding(vertical = 8.dp),
     ) {
         Text(r.title ?: "", style = MaterialTheme.typography.bodyMedium)
@@ -213,6 +247,13 @@ private fun SearchPreview() {
 private fun SearchDetailedPreview() {
     val state = SearchState(searched = true, results = sampleReleases())
     PhonarrTheme(AppSettings("preview")) {
-        Surface { SearchContent(state, canSearch = true, actions = SearchActions(), detailed = true) }
+        Surface {
+            SearchContent(
+                state,
+                canSearch = true,
+                actions = SearchActions(),
+                detailed = true
+            )
+        }
     }
 }

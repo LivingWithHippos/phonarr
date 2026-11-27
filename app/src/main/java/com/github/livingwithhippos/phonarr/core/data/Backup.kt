@@ -1,7 +1,7 @@
 package com.github.livingwithhippos.phonarr.core.data
 
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import java.time.Instant
 
@@ -21,8 +21,15 @@ object Backup {
 
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true; encodeDefaults = true }
 
-    fun encode(settings: AppSettings, indexers: List<IndexerConfig>, now: Instant = Instant.now()): String =
-        json.encodeToString(BackupFile.serializer(), BackupFile(APP, VERSION, now.toString(), settings, indexers))
+    fun encode(
+        settings: AppSettings,
+        indexers: List<IndexerConfig>,
+        now: Instant = Instant.now()
+    ): String =
+        json.encodeToString(
+            BackupFile.serializer(),
+            BackupFile(APP, VERSION, now.toString(), settings, indexers)
+        )
 
     /** Reads a backup, rejecting files that aren't Phonarr backups or come from a newer version. */
     fun decode(text: String): BackupFile {

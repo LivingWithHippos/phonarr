@@ -24,7 +24,10 @@ data class CardigannDefinition(
     val download: DownloadBlock?,
 ) {
     val isPrivate: Boolean get() = type == "private"
-    val privacy: String get() = when (type) { "private" -> "private"; "public" -> "public"; else -> "semi-private" }
+    val privacy: String
+        get() = when (type) {
+            "private" -> "private"; "public" -> "public"; else -> "semi-private"
+        }
 }
 
 data class SettingsField(
@@ -36,7 +39,12 @@ data class SettingsField(
     val options: List<Pair<String, String?>>?,
 )
 
-data class CategoryMappingBlock(val id: String, val cat: String?, val desc: String?, val default: Boolean)
+data class CategoryMappingBlock(
+    val id: String,
+    val cat: String?,
+    val desc: String?,
+    val default: Boolean
+)
 
 data class CapabilitiesBlock(
     val categories: List<Pair<String, String?>>?,
@@ -69,11 +77,12 @@ data class PageTestBlock(val path: String?, val selector: String?)
 
 /** A filter with either a single string argument or a list of arguments. */
 data class FilterBlock(val name: String, val args: Any?) {
-    val argString: String? get() = when (args) {
-        is String -> args
-        is List<*> -> args.firstOrNull() as String?
-        else -> null
-    }
+    val argString: String?
+        get() = when (args) {
+            is String -> args
+            is List<*> -> args.firstOrNull() as String?
+            else -> null
+        }
 
     fun arg(index: Int): String? = when (args) {
         is List<*> -> args.getOrNull(index) as String?
@@ -100,7 +109,16 @@ class RowsBlock(
     val count: SelectorBlock?,
     val multiple: Boolean,
     val missingAttributeEqualsNoResults: Boolean,
-) : SelectorBlock(base.selector, base.optional, base.default, base.text, base.attribute, base.remove, base.filters, base.case)
+) : SelectorBlock(
+    base.selector,
+    base.optional,
+    base.default,
+    base.text,
+    base.attribute,
+    base.remove,
+    base.filters,
+    base.case
+)
 
 open class RequestBlock(
     val path: String?,
@@ -147,7 +165,11 @@ class BeforeBlock(
     val pathselector: SelectorField?,
 ) : RequestBlock(path, method, inputs)
 
-data class InfohashBlock(val hash: SelectorField?, val title: SelectorField?, val usebeforeresponse: Boolean)
+data class InfohashBlock(
+    val hash: SelectorField?,
+    val title: SelectorField?,
+    val usebeforeresponse: Boolean
+)
 
 data class DownloadBlock(
     val selectors: List<SelectorField>?,
@@ -162,7 +184,8 @@ class DefinitionException(message: String) : Exception(message)
 object DefinitionParser {
 
     fun parse(text: String, fileId: String? = null): CardigannDefinition {
-        val root = Yaml.parse(text).map ?: throw DefinitionException("Definition is empty or not a map")
+        val root =
+            Yaml.parse(text).map ?: throw DefinitionException("Definition is empty or not a map")
         return fromNode(root, fileId)
     }
 
@@ -213,7 +236,12 @@ object DefinitionParser {
     private fun capabilities(m: YNode.YMap?): CapabilitiesBlock = CapabilitiesBlock(
         categories = m?.get("categories").pairs(),
         categorymappings = m?.get("categorymappings").mapList {
-            CategoryMappingBlock(it["id"].str() ?: "", it["cat"].str(), it["desc"].str(), it["default"].bool())
+            CategoryMappingBlock(
+                it["id"].str() ?: "",
+                it["cat"].str(),
+                it["desc"].str(),
+                it["default"].bool()
+            )
         },
         modes = m?.get("modes").listMap(),
         allowrawsearch = m?.get("allowrawsearch").bool(),
@@ -236,9 +264,16 @@ object DefinitionParser {
     )
 
     private fun selectorMap(n: YNode?): List<Pair<String, SelectorBlock>>? =
-        (n as? YNode.YMap)?.entries?.mapNotNull { (k, v) -> (v as? YNode.YMap)?.let { k to selectorBlock(it) } }
+        (n as? YNode.YMap)?.entries?.mapNotNull { (k, v) ->
+            (v as? YNode.YMap)?.let {
+                k to selectorBlock(
+                    it
+                )
+            }
+        }
 
-    private fun errorBlock(m: YNode.YMap) = ErrorBlock(m["path"].str(), m["selector"].str(), m["message"].map?.let(::selectorBlock))
+    private fun errorBlock(m: YNode.YMap) =
+        ErrorBlock(m["path"].str(), m["selector"].str(), m["message"].map?.let(::selectorBlock))
 
     fun filters(n: YNode?): List<FilterBlock>? = n.mapList { f ->
         val args: Any? = when (val a = f["args"]) {
@@ -269,11 +304,17 @@ object DefinitionParser {
                 categories = p["categories"].strList(),
                 inheritinputs = p["inheritinputs"].bool(true),
                 followredirect = p["followredirect"].bool(),
-                response = p["response"].map?.let { ResponseBlock(it["type"].str(), it["noResultsMessage"].str()) },
+                response = p["response"].map?.let {
+                    ResponseBlock(
+                        it["type"].str(),
+                        it["noResultsMessage"].str()
+                    )
+                },
             )
         }.orEmpty().toMutableList()
         // a single "path" is converted into a paths entry, like Prowlarr's CleanIndexerDefinition
-        m["path"].str()?.let { paths += SearchPathBlock(it, null, null, null, inheritinputs = true) }
+        m["path"].str()
+            ?.let { paths += SearchPathBlock(it, null, null, null, inheritinputs = true) }
 
         val rowsNode = m["rows"].map ?: throw DefinitionException("Missing search rows")
         val rows = RowsBlock(
@@ -315,10 +356,19 @@ object DefinitionParser {
         selectors = m["selectors"].mapList(::selectorField),
         method = m["method"].str(),
         before = m["before"].map?.let {
-            BeforeBlock(it["path"].str(), it["method"].str(), it["inputs"].pairs(), it["pathselector"].map?.let(::selectorField))
+            BeforeBlock(
+                it["path"].str(),
+                it["method"].str(),
+                it["inputs"].pairs(),
+                it["pathselector"].map?.let(::selectorField)
+            )
         },
         infohash = m["infohash"].map?.let {
-            InfohashBlock(it["hash"].map?.let(::selectorField), it["title"].map?.let(::selectorField), it["usebeforeresponse"].bool())
+            InfohashBlock(
+                it["hash"].map?.let(::selectorField),
+                it["title"].map?.let(::selectorField),
+                it["usebeforeresponse"].bool()
+            )
         },
         headers = m["headers"].listMap(),
     )

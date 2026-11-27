@@ -94,7 +94,7 @@ data class SearchQuery(
 ) {
     val isIdSearch: Boolean
         get() = !imdbId.isNullOrBlank() || tvdbId != null || tmdbId != null || rId != null ||
-            tvMazeId != null || traktId != null || doubanId != null
+                tvMazeId != null || traktId != null || doubanId != null
 
     val isRssSearch: Boolean get() = q.isNullOrBlank() && !isIdSearch && season == null
 
@@ -108,7 +108,9 @@ data class SearchQuery(
             }
             if (ep.isNullOrBlank()) return "S$s"
             val epInt = runCatching { ParseUtil.coerceInt(ep) }.getOrNull()
-            return if (epInt != null && ep.any { it.isDigit() }) "S${s}E${epInt.toString().padStart(2, '0')}" else "S${s}E$ep"
+            return if (epInt != null && ep.any { it.isDigit() }) "S${s}E${
+                epInt.toString().padStart(2, '0')
+            }" else "S${s}E$ep"
         }
 
     /**
@@ -158,24 +160,30 @@ data class SearchQuery(
         private const val TOKEN_OPTS = "(?i)"
         private val TV_TOKENS = Regex(
             TOKEN_OPTS + "\\{((?:imdbid\\:)(?<imdbid>[^{]+)|(?:rid\\:)(?<rid>[^{]+)|(?:tvdbid\\:)(?<tvdbid>[^{]+)|(?:tmdbid\\:)(?<tmdbid>[^{]+)|" +
-                "(?:tvmazeid\\:)(?<tvmazeid>[^{]+)|(?:doubanid\\:)(?<doubanid>[^{]+)|(?:season\\:)(?<season>[^{]+)|(?:episode\\:)(?<episode>[^{]+)|" +
-                "(?:year\\:)(?<year>[^{]+)|(?:genre\\:)(?<genre>[^{]+))\\}",
+                    "(?:tvmazeid\\:)(?<tvmazeid>[^{]+)|(?:doubanid\\:)(?<doubanid>[^{]+)|(?:season\\:)(?<season>[^{]+)|(?:episode\\:)(?<episode>[^{]+)|" +
+                    "(?:year\\:)(?<year>[^{]+)|(?:genre\\:)(?<genre>[^{]+))\\}",
         )
         private val MOVIE_TOKENS = Regex(
             TOKEN_OPTS + "\\{((?:imdbid\\:)(?<imdbid>[^{]+)|(?:doubanid\\:)(?<doubanid>[^{]+)|(?:tmdbid\\:)(?<tmdbid>[^{]+)|" +
-                "(?:traktid\\:)(?<traktid>[^{]+)|(?:year\\:)(?<year>[^{]+)|(?:genre\\:)(?<genre>[^{]+))\\}",
+                    "(?:traktid\\:)(?<traktid>[^{]+)|(?:year\\:)(?<year>[^{]+)|(?:genre\\:)(?<genre>[^{]+))\\}",
         )
         private val MUSIC_TOKENS = Regex(
             TOKEN_OPTS + "\\{((?:artist\\:)(?<artist>[^{]+)|(?:album\\:)(?<album>[^{]+)|(?:track\\:)(?<track>[^{]+)|" +
-                "(?:label\\:)(?<label>[^{]+)|(?:year\\:)(?<year>[^{]+)|(?:genre\\:)(?<genre>[^{]+))\\}",
+                    "(?:label\\:)(?<label>[^{]+)|(?:year\\:)(?<year>[^{]+)|(?:genre\\:)(?<genre>[^{]+))\\}",
         )
         private val BOOK_TOKENS = Regex(
             TOKEN_OPTS + "\\{((?:author\\:)(?<author>[^{]+)|(?:publisher\\:)(?<publisher>[^{]+)|(?:title\\:)(?<title>[^{]+)|" +
-                "(?:year\\:)(?<year>[^{]+)|(?:genre\\:)(?<genre>[^{]+))\\}",
+                    "(?:year\\:)(?<year>[^{]+)|(?:genre\\:)(?<genre>[^{]+))\\}",
         )
 
         /** Query of Prowlarr's `GET /api/v1/search` (query, type, categories, limit, offset). */
-        fun fromProwlarr(query: String?, type: String?, categories: List<Int>, limit: Int?, offset: Int?): SearchQuery =
+        fun fromProwlarr(
+            query: String?,
+            type: String?,
+            categories: List<Int>,
+            limit: Int?,
+            offset: Int?
+        ): SearchQuery =
             SearchQuery(
                 type = SearchType.fromTorznab(type) ?: SearchType.Search,
                 q = query?.takeIf { it.isNotBlank() },
@@ -190,7 +198,8 @@ data class SearchQuery(
             return SearchQuery(
                 type = SearchType.fromTorznab(params("t")) ?: SearchType.Search,
                 q = str("q"),
-                categories = params("cat")?.split(',')?.mapNotNull { it.trim().toIntOrNull() } ?: emptyList(),
+                categories = params("cat")?.split(',')?.mapNotNull { it.trim().toIntOrNull() }
+                    ?: emptyList(),
                 limit = int("limit"),
                 offset = int("offset"),
                 season = int("season"),

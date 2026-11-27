@@ -61,7 +61,8 @@ fun PhonarrUi(vm: MainViewModel = viewModel()) {
     BackHandler(enabled = showRelease) { vm.closeRelease() }
 
     BackHandler(enabled = !showSettings && tab == 1 && route != IndexerRoute.List) {
-        route = if (route is IndexerRoute.Edit && (route as IndexerRoute.Edit).existing == null) IndexerRoute.Pick else IndexerRoute.List
+        route =
+            if (route is IndexerRoute.Edit && (route as IndexerRoute.Edit).existing == null) IndexerRoute.Pick else IndexerRoute.List
     }
 
     Scaffold(
@@ -79,7 +80,9 @@ fun PhonarrUi(vm: MainViewModel = viewModel()) {
                 },
                 navigationIcon = {
                     if (showSettings || showRelease) {
-                        IconButton(onClick = { if (showSettings) showSettings = false else vm.closeRelease() }) {
+                        IconButton(onClick = {
+                            if (showSettings) showSettings = false else vm.closeRelease()
+                        }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
@@ -117,16 +120,19 @@ fun PhonarrUi(vm: MainViewModel = viewModel()) {
                         onAdd = { route = IndexerRoute.Pick },
                         onEdit = { route = IndexerRoute.Edit(it.definitionId, it) },
                     )
+
                     IndexerRoute.Pick -> DefinitionPickerScreen(
                         vm,
                         onPick = { route = IndexerRoute.Edit(it, null) },
                         onBack = { route = IndexerRoute.List },
                     )
+
                     is IndexerRoute.Edit -> IndexerEditScreen(
                         vm, r.definitionId, r.existing,
                         onDone = { route = IndexerRoute.List },
                     )
                 }
+
                 else -> saveableState.SaveableStateProvider("search") { SearchScreen(vm) }
             }
         }

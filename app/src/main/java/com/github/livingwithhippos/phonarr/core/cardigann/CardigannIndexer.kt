@@ -32,7 +32,11 @@ import java.time.LocalDate
 class CardigannException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
 /** One request produced from a definition's search paths (Prowlarr's CardigannRequest). */
-class CardigannRequest(val http: HttpReq, val variables: MutableMap<String, Any?>, val searchPath: SearchPathBlock)
+class CardigannRequest(
+    val http: HttpReq,
+    val variables: MutableMap<String, Any?>,
+    val searchPath: SearchPathBlock
+)
 
 sealed interface DownloadResult {
     data class MagnetLink(val uri: String) : DownloadResult
@@ -53,8 +57,14 @@ class CardigannIndexer(
     userAgent: String = IndexerHttp.DEFAULT_USER_AGENT,
     solver: ChallengeSolver? = null,
 ) {
-    private val charset: Charset = runCatching { Charset.forName(definition.encoding) }.getOrDefault(Charsets.UTF_8)
-    val http = IndexerHttp(httpClient, ((definition.requestDelay ?: 0.0) * 1000).toLong(), userAgent, solver)
+    private val charset: Charset =
+        runCatching { Charset.forName(definition.encoding) }.getOrDefault(Charsets.UTF_8)
+    val http = IndexerHttp(
+        httpClient,
+        ((definition.requestDelay ?: 0.0) * 1000).toLong(),
+        userAgent,
+        solver
+    )
     private val filters = Filters(definition.id, charset) { t, v -> Template.apply(t, v) }
 
     private val categories = IndexerCapabilitiesCategories()
@@ -84,13 +94,18 @@ class CardigannIndexer(
         capabilities.parseCardigannSearchModes(definition.caps.modes)
         capabilities.supportsRawSearch = definition.caps.allowrawsearch
         capabilities.categories.also { caps ->
-            definition.caps.categories?.forEach { (id, name) -> NewznabStandardCategory.getCatByName(name)?.let { caps.addCategoryMapping(id, it) } }
+            definition.caps.categories?.forEach { (id, name) ->
+                NewznabStandardCategory.getCatByName(
+                    name
+                )?.let { caps.addCategoryMapping(id, it) }
+            }
             definition.caps.categorymappings?.forEach { m ->
                 val cat = m.cat?.let { NewznabStandardCategory.getCatByName(it) ?: return@forEach }
                 caps.addCategoryMapping(m.id, cat, m.desc)
             }
         }
-        settings["cookie"]?.takeIf { it.isNotBlank() }?.let { http.cookies.putAll(cookieHeaderToMap(it)) }
+        settings["cookie"]?.takeIf { it.isNotBlank() }
+            ?.let { http.cookies.putAll(cookieHeaderToMap(it)) }
     }
 
     val siteLink: String
@@ -116,11 +131,16 @@ class CardigannIndexer(
                     val checked = (value ?: s.default)?.let { it.equals("true", true) } ?: false
                     v[name] = if (checked) ".True" else null
                 }
+
                 "select" -> {
                     val keys = s.options?.map { it.first }.orEmpty()
-                    v[name] = value?.takeIf { it in keys } ?: s.default?.takeIf { it in keys } ?: keys.sorted().firstOrNull()
+                    v[name] = value?.takeIf { it in keys } ?: s.default?.takeIf { it in keys }
+                            ?: keys.sorted().firstOrNull()
                 }
-                "multi-select" -> v[name] = value?.split(',')?.filter { it.isNotEmpty() } ?: s.defaults.orEmpty()
+
+                "multi-select" -> v[name] =
+                    value?.split(',')?.filter { it.isNotEmpty() } ?: s.defaults.orEmpty()
+
                 else -> {} // info, info_cookie, info_flaresolverr, ...
             }
         }
@@ -135,9 +155,30 @@ class CardigannIndexer(
         v[".Query.Limit"] = query.limit?.toString()
         v[".Query.Offset"] = query.offset?.toString()
         listOf(
-            "Extended", "APIKey", "Genre", "Movie", "Year", "IMDBID", "IMDBIDShort", "TMDBID", "Series", "Ep", "Season",
-            "TVDBID", "TVRageID", "TVMazeID", "TraktID", "DoubanID", "Episode", "Album", "Artist", "Label", "Track",
-            "Author", "Title", "Publisher",
+            "Extended",
+            "APIKey",
+            "Genre",
+            "Movie",
+            "Year",
+            "IMDBID",
+            "IMDBIDShort",
+            "TMDBID",
+            "Series",
+            "Ep",
+            "Season",
+            "TVDBID",
+            "TVRageID",
+            "TVMazeID",
+            "TraktID",
+            "DoubanID",
+            "Episode",
+            "Album",
+            "Artist",
+            "Label",
+            "Track",
+            "Author",
+            "Title",
+            "Publisher",
         ).forEach { v[".Query.$it"] = null }
 
         val fullImdb = ParseUtil.getFullImdbId(query.imdbId)
@@ -152,6 +193,7 @@ class CardigannIndexer(
                 v[".Query.TraktID"] = query.traktId?.toString()
                 v[".Query.DoubanID"] = query.doubanId?.toString()
             }
+
             SearchType.Tv -> {
                 v[".Query.Ep"] = query.ep
                 v[".Query.Season"] = query.season?.toString()
@@ -167,6 +209,7 @@ class CardigannIndexer(
                 v[".Query.DoubanID"] = query.doubanId?.toString()
                 v[".Query.Episode"] = query.episodeSearchString.ifEmpty { null }
             }
+
             SearchType.Music -> {
                 v[".Query.Album"] = query.album
                 v[".Query.Artist"] = query.artist
@@ -175,6 +218,7 @@ class CardigannIndexer(
                 v[".Query.Year"] = query.year?.toString()
                 v[".Query.Track"] = query.track
             }
+
             SearchType.Book -> {
                 v[".Query.Author"] = query.author
                 v[".Query.Title"] = query.title
@@ -182,12 +226,14 @@ class CardigannIndexer(
                 v[".Query.Publisher"] = query.publisher
                 v[".Query.Year"] = query.year?.toString()
             }
+
             SearchType.Search -> {}
         }
         return v
     }
 
-    private fun tpl(t: String?, v: Map<String, Any?>, modifier: ((String?) -> String?)? = null) = Template.apply(t, v, modifier)
+    private fun tpl(t: String?, v: Map<String, Any?>, modifier: ((String?) -> String?)? = null) =
+        Template.apply(t, v, modifier)
 
     private fun resolve(path: String, base: String = siteLink): String {
         val baseUri = URI(base)
@@ -196,8 +242,12 @@ class CardigannIndexer(
             .getOrElse { baseUri.resolve(URI(null, null, path.trim(), null)).toString() }
     }
 
-    private fun customHeaders(h: Map<String, List<String>>?, v: Map<String, Any?>): Map<String, String> =
-        h?.mapNotNull { (k, values) -> values.firstOrNull()?.let { k to (tpl(it, v) ?: "") } }?.toMap() ?: emptyMap()
+    private fun customHeaders(
+        h: Map<String, List<String>>?,
+        v: Map<String, Any?>
+    ): Map<String, String> =
+        h?.mapNotNull { (k, values) -> values.firstOrNull()?.let { k to (tpl(it, v) ?: "") } }
+            ?.toMap() ?: emptyMap()
 
     // ------------------------------------------------------------------ requests
 
@@ -208,10 +258,17 @@ class CardigannIndexer(
         var mapped = categories.mapTorznabCapsToTrackers(query.categories)
         if (mapped.isEmpty()) mapped = defaultCategories.toList()
 
-        val tokens = listOf("Q", "Series", "Movie", "Year").mapNotNull { (variables[".Query.$it"] as? String)?.takeIf { s -> s.isNotBlank() } }.toMutableList()
+        val tokens = listOf(
+            "Q",
+            "Series",
+            "Movie",
+            "Year"
+        ).mapNotNull { (variables[".Query.$it"] as? String)?.takeIf { s -> s.isNotBlank() } }
+            .toMutableList()
         (variables[".Query.Episode"] as? String)?.takeIf { it.isNotBlank() }?.let { tokens += it }
         variables[".Query.Keywords"] = tokens.joinToString(" ")
-        variables[".Keywords"] = filters.apply(variables[".Query.Keywords"] as String, search.keywordsfilters, variables)
+        variables[".Keywords"] =
+            filters.apply(variables[".Query.Keywords"] as String, search.keywordsfilters, variables)
 
         val urls = mutableListOf<String>()
         val result = mutableListOf<CardigannRequest>()
@@ -227,7 +284,8 @@ class CardigannIndexer(
                 variables[".Categories"] = mapped.filter { it in path.categories }
             }
 
-            var url = resolve(tpl(path.path, variables) { Filters.urlEncode(it) }!!.replace("+", "%20"))
+            var url =
+                resolve(tpl(path.path, variables) { Filters.urlEncode(it) }!!.replace("+", "%20"))
             val isPost = path.method.equals("post", true)
             val query = mutableListOf<Pair<String, String>>()
             val inputsList = buildList {
@@ -249,7 +307,14 @@ class CardigannIndexer(
                 }
             }
             if (!isPost && query.isNotEmpty()) {
-                url += (if (url.contains('?')) "&" else "?") + query.joinToString("&") { "${it.first}=${Filters.urlEncode(it.second, charset)}" }
+                url += (if (url.contains('?')) "&" else "?") + query.joinToString("&") {
+                    "${it.first}=${
+                        Filters.urlEncode(
+                            it.second,
+                            charset
+                        )
+                    }"
+                }
             }
             if (!isPost && url in urls) continue
             urls += url
@@ -279,28 +344,67 @@ class CardigannIndexer(
         val headers = customHeaders(login.headers ?: definition.search.headers, variables)
         when (login.method) {
             "cookie" -> {
-                val cookie = settings["cookie"] ?: throw CardigannException("A cookie is required for this indexer")
+                val cookie = settings["cookie"]
+                    ?: throw CardigannException("A cookie is required for this indexer")
                 http.cookies.clear()
                 http.cookies.putAll(cookieHeaderToMap(cookie))
             }
+
             "post", "get", "oneurl" -> {
                 http.cookies.clear()
                 login.cookies?.let { http.cookies.putAll(cookieHeaderToMap(it.joinToString("; "))) }
                 val inputs = login.inputs.orEmpty().map { (k, v) -> k to (tpl(v, variables) ?: "") }
                 val req = when (login.method) {
-                    "post" -> HttpReq(resolve(tpl(login.path, variables) ?: ""), "POST", inputs, headers, true, charset, siteLink)
+                    "post" -> HttpReq(
+                        resolve(tpl(login.path, variables) ?: ""),
+                        "POST",
+                        inputs,
+                        headers,
+                        true,
+                        charset,
+                        siteLink
+                    )
+
                     "get" -> {
-                        val qs = inputs.joinToString("&") { "${it.first}=${Filters.urlEncode(it.second, charset)}" }
-                        HttpReq(resolve((tpl(login.path, variables) ?: "") + "?" + qs), "GET", emptyList(), headers, false, charset, siteLink)
+                        val qs = inputs.joinToString("&") {
+                            "${it.first}=${
+                                Filters.urlEncode(
+                                    it.second,
+                                    charset
+                                )
+                            }"
+                        }
+                        HttpReq(
+                            resolve((tpl(login.path, variables) ?: "") + "?" + qs),
+                            "GET",
+                            emptyList(),
+                            headers,
+                            false,
+                            charset,
+                            siteLink
+                        )
                     }
+
                     else -> {
-                        val oneUrl = tpl(login.inputs?.firstOrNull { it.first == "oneurl" }?.second, variables) ?: ""
-                        HttpReq(resolve((tpl(login.path, variables) ?: "") + oneUrl), "GET", emptyList(), headers, false, charset, siteLink)
+                        val oneUrl = tpl(
+                            login.inputs?.firstOrNull { it.first == "oneurl" }?.second,
+                            variables
+                        ) ?: ""
+                        HttpReq(
+                            resolve((tpl(login.path, variables) ?: "") + oneUrl),
+                            "GET",
+                            emptyList(),
+                            headers,
+                            false,
+                            charset,
+                            siteLink
+                        )
                     }
                 }
                 val resp = http.execute(req)
                 checkLoginError(resp, login.error)
             }
+
             "form" -> formLogin(login, variables, headers)
             else -> throw CardigannException("Login method '${login.method}' is not supported yet")
         }
@@ -308,11 +412,25 @@ class CardigannIndexer(
     }
 
     /** Port of Prowlarr's form login: load the login page, fill its form and submit it. */
-    private suspend fun formLogin(login: LoginBlock, variables: Map<String, Any?>, headers: Map<String, String>) {
+    private suspend fun formLogin(
+        login: LoginBlock,
+        variables: Map<String, Any?>,
+        headers: Map<String, String>
+    ) {
         http.cookies.clear()
         login.cookies?.let { http.cookies.putAll(cookieHeaderToMap(it.joinToString("; "))) }
         val loginUrl = resolve(tpl(login.path, variables) ?: "")
-        val landing = http.execute(HttpReq(loginUrl, "GET", emptyList(), headers, definition.followredirect, charset, siteLink))
+        val landing = http.execute(
+            HttpReq(
+                loginUrl,
+                "GET",
+                emptyList(),
+                headers,
+                definition.followredirect,
+                charset,
+                siteLink
+            )
+        )
         val doc = Jsoup.parse(landing.content, landing.url)
 
         val formSelector = login.form ?: "form"
@@ -342,7 +460,10 @@ class CardigannIndexer(
             val value = try {
                 handleSelector(sel, root, variables, required = !sel.optional)
             } catch (e: Exception) {
-                throw CardigannException("Error while parsing selector input=$key, selector=${sel.selector}: ${e.message}", e)
+                throw CardigannException(
+                    "Error while parsing selector input=$key, selector=${sel.selector}: ${e.message}",
+                    e
+                )
             }
             if (value != null || !sel.optional) pairs[key] = value ?: ""
         }
@@ -351,14 +472,24 @@ class CardigannIndexer(
             val value = try {
                 handleSelector(sel, root, variables, required = !sel.optional)
             } catch (e: Exception) {
-                throw CardigannException("Error while parsing get selector input=$key, selector=${sel.selector}: ${e.message}", e)
+                throw CardigannException(
+                    "Error while parsing get selector input=$key, selector=${sel.selector}: ${e.message}",
+                    e
+                )
             }
             if (value != null || !sel.optional) query[key] = value ?: ""
         }
 
         var submit = login.submitpath ?: form.attr("action")
         if (query.isNotEmpty()) {
-            submit += "?" + query.entries.joinToString("&") { "${Filters.urlEncode(it.key, charset)}=${Filters.urlEncode(it.value, charset)}" }
+            submit += "?" + query.entries.joinToString("&") {
+                "${
+                    Filters.urlEncode(
+                        it.key,
+                        charset
+                    )
+                }=${Filters.urlEncode(it.value, charset)}"
+            }
         }
         val req = HttpReq(
             resolve(submit, loginUrl), "POST", pairs.toList(), headers, true, charset, loginUrl,
@@ -374,7 +505,16 @@ class CardigannIndexer(
         for (e in errors) {
             val sel = e.selector ?: continue
             val match = doc.selectFirst(sel) ?: continue
-            val message = e.message?.let { runCatching { handleSelector(it, match, baseVariables(), false) }.getOrNull() } ?: textContent(match).trim()
+            val message = e.message?.let {
+                runCatching {
+                    handleSelector(
+                        it,
+                        match,
+                        baseVariables(),
+                        false
+                    )
+                }.getOrNull()
+            } ?: textContent(match).trim()
             throw CardigannException("Login failed: $message")
         }
     }
@@ -420,7 +560,8 @@ class CardigannIndexer(
     private fun filterByQuery(releases: List<ReleaseInfo>, query: SearchQuery): List<ReleaseInfo> {
         if (query.isRssSearch || query.isIdSearch) return releases
         val common = setOf("and", "the", "an", "of")
-        val terms = (query.q ?: "").split(Regex("[^\\w]+")).filter { it.length > 1 && it.lowercase() !in common }
+        val terms = (query.q ?: "").split(Regex("[^\\w]+"))
+            .filter { it.length > 1 && it.lowercase() !in common }
         return releases.filter { r ->
             val matches = terms.count { t ->
                 r.title?.contains(t, true) == true || r.description?.contains(t, true) == true
@@ -463,7 +604,9 @@ class CardigannIndexer(
                     ?.toIntOrNull()?.let { if (it < 1) return releases }
             }
             val rows = jsonRows(json, search.rows.selector ?: "")
-                ?: if (search.rows.missingAttributeEqualsNoResults) return releases else throw CardigannException("Error parsing rows selector")
+                ?: if (search.rows.missingAttributeEqualsNoResults) return releases else throw CardigannException(
+                    "Error parsing rows selector"
+                )
             for (row in rows) {
                 var sel: JsonElement? = row
                 if (search.rows.attribute != null) {
@@ -484,10 +627,12 @@ class CardigannIndexer(
                         val name = parts[0]
                         val modifiers = parts.drop(1)
                         val varKey = ".Result.$name"
-                        val optional = key in OPTIONAL_FIELDS || "optional" in modifiers || field.optional
+                        val optional =
+                            key in OPTIONAL_FIELDS || "optional" in modifiers || field.optional
                         var value: String? = null
                         try {
-                            val parent = if (field.selector?.startsWith("..") == true) row else mulRow
+                            val parent =
+                                if (field.selector?.startsWith("..") == true) row else mulRow
                             value = handleJsonSelector(field, parent, variables, !optional)
                             if (optional && value.isNullOrBlank()) {
                                 val def = tpl(field.default, variables)
@@ -497,11 +642,15 @@ class CardigannIndexer(
                                 }
                                 value = def
                             }
-                            variables[varKey] = parseField(value, name, release, modifiers, searchUrl)
+                            variables[varKey] =
+                                parseField(value, name, release, modifiers, searchUrl)
                         } catch (e: Exception) {
                             if (!variables.containsKey(varKey) || optional) variables[varKey] = null
                             if (optional) continue
-                            throw CardigannException("Error while parsing field=$key, selector=${field.selector}, value=${value ?: "<null>"}: ${e.message}", e)
+                            throw CardigannException(
+                                "Error while parsing field=$key, selector=${field.selector}, value=${value ?: "<null>"}: ${e.message}",
+                                e
+                            )
                         }
                     }
                     releases += release
@@ -510,9 +659,15 @@ class CardigannIndexer(
         } else {
             val isXml = request.searchPath.response?.type == "xml"
             var content = results
-            if (search.preprocessingfilters != null) content = filters.apply(content, search.preprocessingfilters, variables) ?: ""
-            val doc: Document = if (isXml) Jsoup.parse(content, searchUrl, Parser.xmlParser()) else Jsoup.parse(content, searchUrl)
-            val rowsSelector = tpl(search.rows.selector, variables) ?: throw CardigannException("Missing rows selector")
+            if (search.preprocessingfilters != null) content =
+                filters.apply(content, search.preprocessingfilters, variables) ?: ""
+            val doc: Document =
+                if (isXml) Jsoup.parse(content, searchUrl, Parser.xmlParser()) else Jsoup.parse(
+                    content,
+                    searchUrl
+                )
+            val rowsSelector = tpl(search.rows.selector, variables)
+                ?: throw CardigannException("Missing rows selector")
             val rows = doc.select(rowsSelector).toMutableList()
 
             val after = search.rows.after
@@ -537,7 +692,8 @@ class CardigannIndexer(
                         val name = parts[0]
                         val modifiers = parts.drop(1)
                         val varKey = ".Result.$name"
-                        val optional = key in OPTIONAL_FIELDS || "optional" in modifiers || field.optional
+                        val optional =
+                            key in OPTIONAL_FIELDS || "optional" in modifiers || field.optional
                         var value: String? = null
                         try {
                             value = handleSelector(field, row, variables, !optional)
@@ -549,7 +705,8 @@ class CardigannIndexer(
                                 }
                                 value = def
                             }
-                            variables[varKey] = parseField(value, name, release, modifiers, searchUrl)
+                            variables[varKey] =
+                                parseField(value, name, release, modifiers, searchUrl)
                         } catch (e: Exception) {
                             if (!variables.containsKey(varKey) || optional) variables[varKey] = null
                             if (optional) continue
@@ -560,19 +717,30 @@ class CardigannIndexer(
                     val dateHeaders = search.rows.dateheaders
                     if (release.publishDate == null && dateHeaders != null) {
                         var value: String? = null
-                        var prev: Element? = row.previousElementSibling() ?: row.parent()?.previousElementSibling()
+                        var prev: Element? =
+                            row.previousElementSibling() ?: row.parent()?.previousElementSibling()
                         while (prev != null) {
                             val cur: Element = prev
-                            value = runCatching { handleSelector(dateHeaders, cur, baseVariables()) }.getOrNull()
+                            value = runCatching {
+                                handleSelector(
+                                    dateHeaders,
+                                    cur,
+                                    baseVariables()
+                                )
+                            }.getOrNull()
                             if (value != null) break
-                            prev = cur.previousElementSibling() ?: cur.parent()?.previousElementSibling()
+                            prev = cur.previousElementSibling() ?: cur.parent()
+                                ?.previousElementSibling()
                         }
                         if (value == null && !dateHeaders.optional) throw CardigannException("No date header row found for $release")
                         if (value != null) release.publishDate = DateTimeUtil.fromUnknown(value)
                     }
                     releases += release
                 } catch (e: Exception) {
-                    Log.e("CardigannIndexer (${definition.id}): Error while parsing row: ${e.message}", e)
+                    Log.e(
+                        "CardigannIndexer (${definition.id}): Error while parsing row: ${e.message}",
+                        e
+                    )
                 }
             }
         }
@@ -581,14 +749,21 @@ class CardigannIndexer(
             if (r.magnetUrl == null && !r.infoHash.isNullOrBlank() && definition.type != "private") {
                 r.magnetUrl = Magnet.buildPublicMagnetLink(r.infoHash!!, r.title)
             }
-            if (r.magnetUrl != null && r.infoHash.isNullOrBlank()) r.infoHash = Magnet.getInfoHashFromMagnet(r.magnetUrl!!)
+            if (r.magnetUrl != null && r.infoHash.isNullOrBlank()) r.infoHash =
+                Magnet.getInfoHashFromMagnet(r.magnetUrl!!)
             if (r.description?.startsWith("Internal") == true) r.flags += "internal"
             if (r.guid == null) r.guid = r.downloadUrl ?: r.magnetUrl ?: r.infoUrl
         }
         return releases
     }
 
-    private fun parseField(input: String?, name: String, r: ReleaseInfo, modifiers: List<String>, searchUrl: String): String? {
+    private fun parseField(
+        input: String?,
+        name: String,
+        r: ReleaseInfo,
+        modifiers: List<String>,
+        searchUrl: String
+    ): String? {
         var value = input
         when (name) {
             "download" -> {
@@ -603,27 +778,35 @@ class CardigannIndexer(
                 }
                 r.guid = value
             }
+
             "magnet" -> r.magnetUrl = value
             "infohash" -> r.infoHash = value
             "details" -> {
                 r.infoUrl = resolve(value!!, searchUrl)
                 value = r.infoUrl
             }
+
             "comments" -> {
                 val url = resolve(value!!, searchUrl)
                 if (r.commentUrl == null) r.commentUrl = url
                 value = url
             }
+
             "title" -> {
                 r.title = if ("append" in modifiers) (r.title ?: "") + value else value
                 value = r.title
             }
+
             "description" -> {
                 r.description = if ("append" in modifiers) (r.description ?: "") + value else value
                 value = r.description
             }
+
             "category", "categorydesc" -> {
-                val cats = if (name == "category") categories.mapTrackerCatToNewznab(value) else categories.mapTrackerCatDescToNewznab(value)
+                val cats =
+                    if (name == "category") categories.mapTrackerCatToNewznab(value) else categories.mapTrackerCatDescToNewznab(
+                        value
+                    )
                 if (cats.isNotEmpty()) {
                     if ("noappend" in modifiers) r.categories = cats.toMutableList()
                     else cats.forEach { if (it !in r.categories) r.categories += it }
@@ -634,16 +817,19 @@ class CardigannIndexer(
                     value = r.categories.joinToString(",") { it.id.toString() }
                 }
             }
+
             "size" -> {
                 r.size = ParseUtil.getBytes(value!!)
                 value = r.size.toString()
             }
+
             "leechers" -> {
                 var l = ParseUtil.coerceLong(value)
                 if (l >= 5_000_000L) l = 0
                 r.peers = (r.peers ?: 0) + l.toInt()
                 value = l.toString()
             }
+
             "seeders" -> {
                 var s = ParseUtil.coerceInt(value)
                 if (s >= 5_000_000) s = 0
@@ -651,35 +837,85 @@ class CardigannIndexer(
                 r.peers = (r.peers ?: 0) + s
                 value = s.toString()
             }
+
             "date" -> {
                 r.publishDate = DateTimeUtil.fromUnknown(value!!)
                 value = DateTimeUtil.format(r.publishDate!!)
             }
-            "files" -> { r.files = ParseUtil.coerceInt(value); value = r.files.toString() }
-            "grabs" -> { r.grabs = ParseUtil.coerceInt(value); value = r.grabs.toString() }
-            "downloadvolumefactor" -> { r.downloadVolumeFactor = ParseUtil.coerceDouble(value); value = r.downloadVolumeFactor.toString() }
-            "uploadvolumefactor" -> { r.uploadVolumeFactor = ParseUtil.coerceDouble(value); value = r.uploadVolumeFactor.toString() }
-            "minimumratio" -> { r.minimumRatio = ParseUtil.coerceDouble(value); value = r.minimumRatio.toString() }
-            "minimumseedtime" -> { r.minimumSeedTime = ParseUtil.coerceLong(value); value = r.minimumSeedTime.toString() }
-            "imdb", "imdbid" -> { r.imdbId = idFrom(value); value = r.imdbId.toString() }
-            "tmdbid" -> { r.tmdbId = idFrom(value); value = r.tmdbId.toString() }
-            "rageid" -> { r.tvRageId = idFrom(value); value = r.tvRageId.toString() }
-            "tvdbid" -> { r.tvdbId = idFrom(value); value = r.tvdbId.toString() }
-            "tvmazeid" -> { r.tvMazeId = idFrom(value); value = r.tvMazeId.toString() }
-            "traktid" -> { r.traktId = idFrom(value); value = r.traktId.toString() }
-            "doubanid" -> { r.doubanId = idFrom(value); value = r.doubanId.toString() }
+
+            "files" -> {
+                r.files = ParseUtil.coerceInt(value); value = r.files.toString()
+            }
+
+            "grabs" -> {
+                r.grabs = ParseUtil.coerceInt(value); value = r.grabs.toString()
+            }
+
+            "downloadvolumefactor" -> {
+                r.downloadVolumeFactor = ParseUtil.coerceDouble(value); value =
+                    r.downloadVolumeFactor.toString()
+            }
+
+            "uploadvolumefactor" -> {
+                r.uploadVolumeFactor = ParseUtil.coerceDouble(value); value =
+                    r.uploadVolumeFactor.toString()
+            }
+
+            "minimumratio" -> {
+                r.minimumRatio = ParseUtil.coerceDouble(value); value = r.minimumRatio.toString()
+            }
+
+            "minimumseedtime" -> {
+                r.minimumSeedTime = ParseUtil.coerceLong(value); value =
+                    r.minimumSeedTime.toString()
+            }
+
+            "imdb", "imdbid" -> {
+                r.imdbId = idFrom(value); value = r.imdbId.toString()
+            }
+
+            "tmdbid" -> {
+                r.tmdbId = idFrom(value); value = r.tmdbId.toString()
+            }
+
+            "rageid" -> {
+                r.tvRageId = idFrom(value); value = r.tvRageId.toString()
+            }
+
+            "tvdbid" -> {
+                r.tvdbId = idFrom(value); value = r.tvdbId.toString()
+            }
+
+            "tvmazeid" -> {
+                r.tvMazeId = idFrom(value); value = r.tvMazeId.toString()
+            }
+
+            "traktid" -> {
+                r.traktId = idFrom(value); value = r.traktId.toString()
+            }
+
+            "doubanid" -> {
+                r.doubanId = idFrom(value); value = r.doubanId.toString()
+            }
+
             "poster" -> {
                 if (!value.isNullOrBlank()) r.posterUrl = resolve(value, searchUrl)
                 value = r.posterUrl
             }
+
             "genre" -> {
                 val genres = (r.genres ?: mutableListOf())
-                value!!.split(Regex("[, /)(.;\\[\\]\"|:]")).map { it.trim() }.filter { it.isNotEmpty() }
+                value!!.split(Regex("[, /)(.;\\[\\]\"|:]")).map { it.trim() }
+                    .filter { it.isNotEmpty() }
                     .map { it.replace("_", " ") }.forEach { if (it !in genres) genres += it }
                 r.genres = genres
                 value = genres.joinToString(", ")
             }
-            "year" -> { r.year = ParseUtil.coerceInt(value); value = r.year.toString() }
+
+            "year" -> {
+                r.year = ParseUtil.coerceInt(value); value = r.year.toString()
+            }
+
             "author" -> r.author = value
             "booktitle" -> r.bookTitle = value
             "publisher" -> r.publisher = value
@@ -705,16 +941,30 @@ class CardigannIndexer(
         return element.selectFirst(selector)
     }
 
-    private fun matches(element: Element, selector: String): Boolean = runCatching { element.`is`(selector) }.getOrDefault(false)
+    private fun matches(element: Element, selector: String): Boolean =
+        runCatching { element.`is`(selector) }.getOrDefault(false)
 
-    fun handleSelector(selector: SelectorBlock, dom: Element, variables: Map<String, Any?>, required: Boolean = true): String? {
-        if (selector.text != null) return filters.apply(tpl(selector.text, variables), selector.filters, variables)
+    fun handleSelector(
+        selector: SelectorBlock,
+        dom: Element,
+        variables: Map<String, Any?>,
+        required: Boolean = true
+    ): String? {
+        if (selector.text != null) return filters.apply(
+            tpl(selector.text, variables),
+            selector.filters,
+            variables
+        )
 
         var selection: Element = dom
         if (selector.selector != null) {
             val sel = tpl(selector.selector, variables)!!
             selection = if (matches(dom, sel)) dom else querySelector(dom, sel) ?: run {
-                if (required) throw CardigannException("Selector \"$sel\" didn't match ${dom.outerHtml().take(500)}")
+                if (required) throw CardigannException(
+                    "Selector \"$sel\" didn't match ${
+                        dom.outerHtml().take(500)
+                    }"
+                )
                 return null
             }
         }
@@ -730,12 +980,20 @@ class CardigannIndexer(
                 }
             }
             value = found ?: run {
-                if (required) throw CardigannException("None of the case selectors matched ${selection.outerHtml().take(500)}")
+                if (required) throw CardigannException(
+                    "None of the case selectors matched ${
+                        selection.outerHtml().take(500)
+                    }"
+                )
                 return null
             }
         } else if (selector.attribute != null) {
             if (!selection.hasAttr(selector.attribute)) {
-                if (required) throw CardigannException("Attribute \"${selector.attribute}\" is not set for element ${selection.outerHtml().take(500)}")
+                if (required) throw CardigannException(
+                    "Attribute \"${selector.attribute}\" is not set for element ${
+                        selection.outerHtml().take(500)
+                    }"
+                )
                 return null
             }
             value = selection.attr(selector.attribute)
@@ -745,8 +1003,17 @@ class CardigannIndexer(
         return filters.apply(value.trim(), selector.filters, variables)
     }
 
-    fun handleJsonSelector(selector: SelectorBlock, parent: JsonElement, variables: Map<String, Any?>, required: Boolean = true): String? {
-        if (selector.text != null) return filters.apply(tpl(selector.text, variables), selector.filters, variables)
+    fun handleJsonSelector(
+        selector: SelectorBlock,
+        parent: JsonElement,
+        variables: Map<String, Any?>,
+        required: Boolean = true
+    ): String? {
+        if (selector.text != null) return filters.apply(
+            tpl(selector.text, variables),
+            selector.filters,
+            variables
+        )
 
         var value: String? = null
         if (selector.selector != null) {
@@ -757,7 +1024,9 @@ class CardigannIndexer(
                 if (required) throw CardigannException("Selector \"$sel\" didn't match JSON content")
                 return null
             }
-            value = if (selection is JsonArray) selection.joinToString(",") { JsonPath.asString(it) ?: "" } else JsonPath.asString(selection)
+            value = if (selection is JsonArray) selection.joinToString(",") {
+                JsonPath.asString(it) ?: ""
+            } else JsonPath.asString(selection)
         }
         if (selector.case != null) {
             var matched = false
@@ -791,13 +1060,24 @@ class CardigannIndexer(
 
     private fun jsonFieldSelector(json: JsonElement, rowSelector: String): String? {
         val selector = rowSelector.split(':')[0]
-        val obj: JsonElement = if (selector.isBlank()) json else JsonPath.select(json, selector) ?: return null
+        val obj: JsonElement =
+            if (selector.isBlank()) json else JsonPath.select(json, selector) ?: return null
         for (m in JSON_SELECTOR_REGEX.findAll(rowSelector)) {
             val filter = m.groups["filter"]!!.value
             val key = m.groups["key"]!!.value
             when (filter) {
-                "has" -> if (if (JSON_SELECTOR_REGEX.containsMatchIn(key)) jsonFieldSelector(obj, key) == null else JsonPath.select(obj, key) == null) return null
-                "not" -> if (if (JSON_SELECTOR_REGEX.containsMatchIn(key)) jsonFieldSelector(obj, key) != null else JsonPath.select(obj, key) != null) return null
+                "has" -> if (if (JSON_SELECTOR_REGEX.containsMatchIn(key)) jsonFieldSelector(
+                        obj,
+                        key
+                    ) == null else JsonPath.select(obj, key) == null
+                ) return null
+
+                "not" -> if (if (JSON_SELECTOR_REGEX.containsMatchIn(key)) jsonFieldSelector(
+                        obj,
+                        key
+                    ) != null else JsonPath.select(obj, key) != null
+                ) return null
+
                 "contains" -> if (!obj.toString().contains(key)) return null
                 else -> Log.e("CardigannIndexer (${definition.id}): Unsupported selector: $rowSelector")
             }
@@ -817,7 +1097,8 @@ class CardigannIndexer(
         val method = if (download?.method == "post") "POST" else "GET"
 
         if (download != null) {
-            val pageReq = HttpReq(link, "GET", headers = headers, followRedirects = true, charset = charset)
+            val pageReq =
+                HttpReq(link, "GET", headers = headers, followRedirects = true, charset = charset)
             var response: HttpResp? = null
             download.before?.let { before ->
                 var beforePath = before.path
@@ -825,33 +1106,70 @@ class CardigannIndexer(
                     response = http.execute(pageReq)
                     beforePath = matchSelector(response!!, before.pathselector, variables)
                 }
-                val inputs = before.inputs.orEmpty().map { (k, v) -> k to (tpl(v, variables) ?: "") }
+                val inputs =
+                    before.inputs.orEmpty().map { (k, v) -> k to (tpl(v, variables) ?: "") }
                 val url = resolve(tpl(beforePath, variables) ?: "", link)
                 response = if (before.method.equals("post", true)) {
                     http.execute(HttpReq(url, "POST", inputs, headers, true, charset, link))
                 } else {
-                    val qs = inputs.joinToString(before.queryseparator) { "${it.first}=${Filters.urlEncode(it.second, charset)}" }
-                    http.execute(HttpReq(if (qs.isEmpty()) url else "$url?$qs", "GET", emptyList(), headers, true, charset, link))
+                    val qs = inputs.joinToString(before.queryseparator) {
+                        "${it.first}=${
+                            Filters.urlEncode(
+                                it.second,
+                                charset
+                            )
+                        }"
+                    }
+                    http.execute(
+                        HttpReq(
+                            if (qs.isEmpty()) url else "$url?$qs",
+                            "GET",
+                            emptyList(),
+                            headers,
+                            true,
+                            charset,
+                            link
+                        )
+                    )
                 }
             }
 
             val infohash = download.infohash
             if (infohash?.hash != null && infohash.title != null) {
-                if (!infohash.usebeforeresponse || download.before == null || response == null) response = http.execute(pageReq)
-                val hash = matchSelector(response!!, infohash.hash, variables) ?: throw CardigannException("InfoHash selectors didn't match hash.")
-                val title = matchSelector(response!!, infohash.title, variables) ?: throw CardigannException("InfoHash selectors didn't match title.")
+                if (!infohash.usebeforeresponse || download.before == null || response == null) response =
+                    http.execute(pageReq)
+                val hash =
+                    matchSelector(response!!, infohash.hash, variables) ?: throw CardigannException(
+                        "InfoHash selectors didn't match hash."
+                    )
+                val title = matchSelector(response!!, infohash.title, variables)
+                    ?: throw CardigannException("InfoHash selectors didn't match title.")
                 return DownloadResult.MagnetLink(Magnet.buildPublicMagnetLink(hash, title))
             } else if (!download.selectors.isNullOrEmpty()) {
                 var found: String? = null
                 for (selector in download.selectors) {
                     try {
-                        if (!selector.usebeforeresponse || download.before == null || response == null) response = http.execute(pageReq)
+                        if (!selector.usebeforeresponse || download.before == null || response == null) response =
+                            http.execute(pageReq)
                         val href = matchSelector(response!!, selector, variables) ?: continue
                         val resolved = if (href.startsWith("magnet:")) href else resolve(href, link)
                         if (!resolved.startsWith("magnet:") && definition.testLinkTorrent) {
-                            val test = http.execute(HttpReq(resolved, "GET", emptyList(), headers, true, charset, link, allowBrowser = false))
+                            val test = http.execute(
+                                HttpReq(
+                                    resolved,
+                                    "GET",
+                                    emptyList(),
+                                    headers,
+                                    true,
+                                    charset,
+                                    link,
+                                    allowBrowser = false
+                                )
+                            )
                             val redirect = test.redirectUrl
-                            if (test.isRedirect && redirect?.startsWith("magnet:") == true) return DownloadResult.MagnetLink(redirect)
+                            if (test.isRedirect && redirect?.startsWith("magnet:") == true) return DownloadResult.MagnetLink(
+                                redirect
+                            )
                             if (test.body.isNotEmpty() && test.body[0] != 'd'.code.toByte()) {
                                 Log.d("${definition.id}: download selector ${selector.selector} returned an invalid torrent, trying next")
                                 continue
@@ -860,26 +1178,54 @@ class CardigannIndexer(
                         found = resolved
                         break
                     } catch (e: Exception) {
-                        Log.e("${definition.id}: error with download selector ${selector.selector}", e)
+                        Log.e(
+                            "${definition.id}: error with download selector ${selector.selector}",
+                            e
+                        )
                     }
                 }
-                target = found ?: throw CardigannException("Download selectors didn't match for $link")
+                target =
+                    found ?: throw CardigannException("Download selectors didn't match for $link")
             }
         }
 
         if (target.startsWith("magnet:")) return DownloadResult.MagnetLink(target)
-        val resp = http.execute(HttpReq(target, method, emptyList(), headers, true, charset, siteLink, allowBrowser = false))
-        resp.redirectUrl?.let { if (resp.isRedirect && it.startsWith("magnet:")) return DownloadResult.MagnetLink(it) }
+        val resp = http.execute(
+            HttpReq(
+                target,
+                method,
+                emptyList(),
+                headers,
+                true,
+                charset,
+                siteLink,
+                allowBrowser = false
+            )
+        )
+        resp.redirectUrl?.let {
+            if (resp.isRedirect && it.startsWith("magnet:")) return DownloadResult.MagnetLink(
+                it
+            )
+        }
         if (resp.status !in 200..299) throw CardigannException("Download failed with status ${resp.status}")
         if (resp.body.isEmpty() || resp.body[0] != 'd'.code.toByte()) {
             throw CardigannException("The downloaded file is not a torrent (maybe the site requires a login or blocked the request)")
         }
-        val fileName = resp.headers.entries.firstOrNull { it.key.equals("Content-Disposition", true) }?.value?.firstOrNull()
+        val fileName = resp.headers.entries.firstOrNull {
+            it.key.equals(
+                "Content-Disposition",
+                true
+            )
+        }?.value?.firstOrNull()
             ?.let { Regex("filename\\*?=(?:UTF-8'')?\"?([^\";]+)\"?").find(it)?.groupValues?.get(1) }
         return DownloadResult.Torrent(resp.body, fileName)
     }
 
-    private fun matchSelector(resp: HttpResp, selector: SelectorField, variables: Map<String, Any?>): String? {
+    private fun matchSelector(
+        resp: HttpResp,
+        selector: SelectorField,
+        variables: Map<String, Any?>
+    ): String? {
         val sel = tpl(selector.selector, variables) ?: return null
         val doc = Jsoup.parse(resp.content, resp.url)
         val element = doc.selectFirst(sel) ?: run {
@@ -899,15 +1245,28 @@ class CardigannIndexer(
         v["$prefix.AbsolutePath"] = uri.rawPath
         v["$prefix.Scheme"] = uri.scheme
         v["$prefix.Host"] = uri.host
-        v["$prefix.Port"] = (if (uri.port != -1) uri.port else if (uri.scheme == "https") 443 else 80).toString()
+        v["$prefix.Port"] =
+            (if (uri.port != -1) uri.port else if (uri.scheme == "https") 443 else 80).toString()
         v["$prefix.PathAndQuery"] = uri.rawPath + (uri.rawQuery?.let { "?$it" } ?: "")
         v["$prefix.Query"] = uri.rawQuery?.let { "?$it" } ?: ""
-        ParseUtil.parseQuery(uri.rawQuery ?: "").forEach { (k, values) -> v["$prefix.Query.$k"] = values.firstOrNull() }
+        ParseUtil.parseQuery(uri.rawQuery ?: "")
+            .forEach { (k, values) -> v["$prefix.Query.$k"] = values.firstOrNull() }
     }
 
     companion object {
         val OPTIONAL_FIELDS = setOf(
-            "imdb", "imdbid", "tmdbid", "rageid", "tvdbid", "tvmazeid", "traktid", "doubanid", "poster", "banner", "description", "genre",
+            "imdb",
+            "imdbid",
+            "tmdbid",
+            "rageid",
+            "tvdbid",
+            "tvmazeid",
+            "traktid",
+            "doubanid",
+            "poster",
+            "banner",
+            "description",
+            "genre",
         )
         private val JSON_SELECTOR_REGEX = Regex(":(?<filter>.+?)\\((?<key>.+?)\\)(?=:|\\z)")
 

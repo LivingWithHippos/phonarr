@@ -20,7 +20,10 @@ import java.security.SecureRandom
 import java.util.zip.ZipInputStream
 
 class SettingsRepository(dir: File) {
-    private val store = JsonFileStore(File(dir, "settings.json"), AppSettings.serializer()) { AppSettings(newApiKey()) }
+    private val store = JsonFileStore(
+        File(dir, "settings.json"),
+        AppSettings.serializer()
+    ) { AppSettings(newApiKey()) }
     private val _settings = MutableStateFlow(store.read().also { store.write(it) })
     val settings: StateFlow<AppSettings> = _settings.asStateFlow()
 
@@ -44,7 +47,10 @@ class SettingsRepository(dir: File) {
 }
 
 class IndexerRepository(dir: File) {
-    private val store = JsonFileStore(File(dir, "indexers.json"), ListSerializer(IndexerConfig.serializer())) { emptyList() }
+    private val store = JsonFileStore(
+        File(dir, "indexers.json"),
+        ListSerializer(IndexerConfig.serializer())
+    ) { emptyList() }
     private val _indexers = MutableStateFlow(store.read())
     val indexers: StateFlow<List<IndexerConfig>> = _indexers.asStateFlow()
 
@@ -53,7 +59,8 @@ class IndexerRepository(dir: File) {
     @Synchronized
     fun save(config: IndexerConfig): IndexerConfig {
         val list = _indexers.value.toMutableList()
-        val saved = if (config.id <= 0) config.copy(id = (list.maxOfOrNull { it.id } ?: 0) + 1) else config
+        val saved =
+            if (config.id <= 0) config.copy(id = (list.maxOfOrNull { it.id } ?: 0) + 1) else config
         val idx = list.indexOfFirst { it.id == saved.id }
         if (idx >= 0) list[idx] = saved else list += saved
         store.write(list)
@@ -81,7 +88,10 @@ class IndexerRepository(dir: File) {
  * like Prowlarr's IndexerDefinitionUpdateService.
  */
 class DefinitionRepository(private val dir: File, private val client: HttpClient) {
-    private val summariesStore = JsonFileStore(File(dir, "index.json"), ListSerializer(DefinitionSummary.serializer())) { emptyList() }
+    private val summariesStore = JsonFileStore(
+        File(dir, "index.json"),
+        ListSerializer(DefinitionSummary.serializer())
+    ) { emptyList() }
     private val _summaries = MutableStateFlow(summariesStore.read())
     val summaries: StateFlow<List<DefinitionSummary>> = _summaries.asStateFlow()
     private val cache = HashMap<String, CardigannDefinition>()
@@ -99,7 +109,10 @@ class DefinitionRepository(private val dir: File, private val client: HttpClient
                 val entry = zip.nextEntry ?: break
                 val name = entry.name.substringAfterLast('/')
                 // flat .yml files only: protects against path traversal in the archive
-                if (entry.isDirectory || !name.endsWith(".yml") || name.startsWith(".") || name.contains("..")) continue
+                if (entry.isDirectory || !name.endsWith(".yml") || name.startsWith(".") || name.contains(
+                        ".."
+                    )
+                ) continue
                 File(dir, name).writeBytes(zip.readBytes())
                 count++
             }
@@ -111,7 +124,8 @@ class DefinitionRepository(private val dir: File, private val client: HttpClient
 
     /** Parses every definition on disk and stores a lightweight index for the UI. */
     suspend fun rebuildIndex(): List<DefinitionSummary> = withContext(Dispatchers.IO) {
-        val files = (dir.listFiles()?.toList().orEmpty() + customDir.listFiles()?.toList().orEmpty()).filter { it.name.endsWith(".yml") }
+        val files = (dir.listFiles()?.toList().orEmpty() + customDir.listFiles()?.toList()
+            .orEmpty()).filter { it.name.endsWith(".yml") }
         val list = files.mapNotNull { f ->
             val id = f.nameWithoutExtension
             if (id in BLOCKLIST) return@mapNotNull null
@@ -144,13 +158,29 @@ class DefinitionRepository(private val dir: File, private val client: HttpClient
 
     companion object {
         const val DEFINITION_VERSION = 12
-        const val PACKAGE_URL = "https://indexers.prowlarr.com/master/$DEFINITION_VERSION/package.zip"
+        const val PACKAGE_URL =
+            "https://indexers.prowlarr.com/master/$DEFINITION_VERSION/package.zip"
 
         // definitions Prowlarr replaced with C# implementations
         val BLOCKLIST = setOf(
-            "aither", "animeworld", "audiobookbay", "beyond-hd-oneurl", "beyond-hd", "blutopia", "brsociety", "danishbytes",
-            "datascene", "desitorrents", "hdbits", "lat-team", "mteamtp", "mteamtp2fa", "reelflix", "shareisland",
-            "skipthecommercials", "tellytorrent",
+            "aither",
+            "animeworld",
+            "audiobookbay",
+            "beyond-hd-oneurl",
+            "beyond-hd",
+            "blutopia",
+            "brsociety",
+            "danishbytes",
+            "datascene",
+            "desitorrents",
+            "hdbits",
+            "lat-team",
+            "mteamtp",
+            "mteamtp2fa",
+            "reelflix",
+            "shareisland",
+            "skipthecommercials",
+            "tellytorrent",
         )
     }
 }
