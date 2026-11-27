@@ -1,6 +1,7 @@
 # Phonarr
 
 A partial android reimplementation of [Prowlarr](https://github.com/prowlarr/prowlarr).
+It supports both searching inside this app and connecting any software which supports Prowlarr/Torznab, including [nullseek](https://github.com/LivingWithHippos/nullseek).
 
 ## How to use
 
