@@ -29,6 +29,15 @@ same API key (`X-Api-Key` header or `apikey` parameter). Supported endpoints:
 - `GET /api/v1/system/status`
 - `GET /api/v1/search?query=...&type=search` (also `indexerIds`, `categories`, `limit`, `offset`;
   Prowlarr's `{Season:1}`-style tokens work in `query` for tvsearch, movie, music and book searches)
+- `GET /api/v1/indexer/{id}/categories`
+
+## Install
+
+For now only available on the [release section of GitHub](https://github.com/LivingWithHippos/webble/releases).
+
+To get updates automatically, add it to [Obtainium](https://github.com/ImranR98/Obtainium):
+
+[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="100">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/LivingWithHippos/phonarr)
 
 ## Not supported yet
 
