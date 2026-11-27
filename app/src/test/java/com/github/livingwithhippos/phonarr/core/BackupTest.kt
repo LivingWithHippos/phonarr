@@ -5,7 +5,9 @@ import com.github.livingwithhippos.phonarr.core.data.Backup
 import com.github.livingwithhippos.phonarr.core.data.IndexerConfig
 import com.github.livingwithhippos.phonarr.core.data.IndexerRepository
 import com.github.livingwithhippos.phonarr.core.data.SiteBrowser
+import com.github.livingwithhippos.phonarr.core.data.listenHost
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,6 +15,17 @@ import java.nio.file.Files
 import java.time.Instant
 
 class BackupTest {
+    @Test
+    fun listenOnNetworkDefaultsOffAndPicksHost() {
+        val old = Backup.decode("""{"app":"Phonarr","version":1,"settings":{"apiKey":"abc","port":1234}}""")
+        assertFalse(old.settings.listenOnNetwork)
+        assertEquals("127.0.0.1", old.settings.listenHost)
+        assertEquals("0.0.0.0", old.settings.copy(listenOnNetwork = true).listenHost)
+
+        val roundTrip = Backup.decode(Backup.encode(AppSettings("k", listenOnNetwork = true), emptyList()))
+        assertTrue(roundTrip.settings.listenOnNetwork)
+    }
+
     private val settings = AppSettings(apiKey = "abc123", port = 9898, lastDefinitionsUpdate = 42, openSiteIn = SiteBrowser.External)
     private val indexers = listOf(
         IndexerConfig(1, "nyaasi", "Nyaa"),

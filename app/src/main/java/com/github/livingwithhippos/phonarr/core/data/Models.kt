@@ -25,7 +25,12 @@ data class AppSettings(
     val dohProvider: DohProvider = DohProvider.Cloudflare,
     /** endpoint used when [dohProvider] is [DohProvider.Custom] */
     val dohCustomUrl: String = "",
+    /** listen on every network interface (0.0.0.0) instead of only this phone (127.0.0.1) */
+    val listenOnNetwork: Boolean = false,
 )
+
+/** The address the server binds to. */
+val AppSettings.listenHost: String get() = if (listenOnNetwork) "0.0.0.0" else "127.0.0.1"
 
 /** DNS over HTTPS providers. [bootstrap] are the provider's IPs, so its own name needs no DNS lookup. */
 @Serializable

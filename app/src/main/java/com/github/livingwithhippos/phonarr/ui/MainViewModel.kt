@@ -76,6 +76,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun setListenOnNetwork(enabled: Boolean) {
+        if (enabled == settings.value.listenOnNetwork) return
+        container.settings.update { it.copy(listenOnNetwork = enabled) }
+        if (serverRunning.value) {
+            stopServer()
+            _message.value = "Network access changed: start the server again"
+        }
+    }
+
     fun regenerateApiKey() = container.settings.regenerateApiKey()
 
     /** Writes the indexers and settings to [uri], a document the user picked. */
@@ -121,13 +130,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Replaces the indexers and settings with the backup's. */
     fun restore(backup: BackupFile) {
-        val oldPort = container.settings.settings.value.port
+        val old = container.settings.settings.value
         container.indexers.replaceAll(backup.indexers)
         container.searchService.forgetAll()
         container.settings.update { backup.settings.copy(lastDefinitionsUpdate = it.lastDefinitionsUpdate) }
-        if (serverRunning.value && backup.settings.port != oldPort) {
+        if (serverRunning.value && (backup.settings.port != old.port || backup.settings.listenOnNetwork != old.listenOnNetwork)) {
             stopServer()
-            _message.value = "Restored ${backup.indexers.size} indexers. Port changed: start the server again"
+            _message.value = "Restored ${backup.indexers.size} indexers. Server address changed: start the server again"
         } else {
             _message.value = "Restored ${backup.indexers.size} indexers"
         }

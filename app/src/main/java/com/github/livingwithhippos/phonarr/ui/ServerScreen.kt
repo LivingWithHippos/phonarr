@@ -29,6 +29,11 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Switch
+import androidx.compose.ui.semantics.Role
+import com.github.livingwithhippos.phonarr.core.data.listenHost
+import com.github.livingwithhippos.phonarr.core.util.lanAddresses
 import java.text.DateFormat
 import java.util.Date
 
@@ -50,7 +55,7 @@ fun ServerScreen(vm: MainViewModel) {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Torznab server", style = MaterialTheme.typography.titleMedium)
-                Text(if (running) "Running on 127.0.0.1:${settings.port}" else "Stopped")
+                Text(if (running) "Running on ${settings.listenHost}:${settings.port}" else "Stopped")
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (running) OutlinedButton(onClick = vm::stopServer) { Text("Stop") }
@@ -68,6 +73,24 @@ fun ServerScreen(vm: MainViewModel) {
                         onClick = { vm.setPort(port.toInt()) },
                     ) { Text("Set") }
                 }
+                Row(
+                    Modifier.fillMaxWidth().toggleable(
+                        value = settings.listenOnNetwork,
+                        onValueChange = vm::setListenOnNetwork,
+                        role = Role.Switch,
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Allow other devices", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Listens on all network interfaces (0.0.0.0). Anyone on your network can reach the server: " +
+                                "the API key is the only protection and traffic isn't encrypted.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    Switch(checked = settings.listenOnNetwork, onCheckedChange = null, modifier = Modifier.padding(start = 12.dp))
+                }
             }
         }
 
@@ -75,9 +98,18 @@ fun ServerScreen(vm: MainViewModel) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Connect your apps", style = MaterialTheme.typography.titleMedium)
                 Text("Add a Torznab indexer in your app with this URL and API key. Use \"all\" to search every enabled indexer, or an indexer number from the Indexers tab.")
-                val url = "http://127.0.0.1:${settings.port}"
-                Text(url, fontFamily = FontFamily.Monospace)
-                TextButton(onClick = { clipboard.setText(AnnotatedString(url)) }) { Text("Copy URL") }
+                if (settings.listenOnNetwork) Text("On this phone", style = MaterialTheme.typography.labelLarge)
+                CopyableUrl("http://127.0.0.1:${settings.port}") { clipboard.setText(AnnotatedString(it)) }
+                if (settings.listenOnNetwork) {
+                    val addresses = remember(settings.listenOnNetwork, running) { lanAddresses() }
+                    Text("From other devices", style = MaterialTheme.typography.labelLarge)
+                    if (addresses.isEmpty()) {
+                        Text("Not connected to a local network", style = MaterialTheme.typography.bodySmall)
+                    }
+                    addresses.forEach { ip ->
+                        CopyableUrl("http://$ip:${settings.port}") { clipboard.setText(AnnotatedString(it)) }
+                    }
+                }
                 Text("API key", style = MaterialTheme.typography.labelLarge)
                 Text(settings.apiKey, fontFamily = FontFamily.Monospace)
                 Row {
@@ -106,5 +138,13 @@ fun ServerScreen(vm: MainViewModel) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CopyableUrl(url: String, onCopy: (String) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(url, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
+        TextButton(onClick = { onCopy(url) }) { Text("Copy") }
     }
 }
