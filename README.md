@@ -3,6 +3,8 @@
 A partial android reimplementation of [Prowlarr](https://github.com/prowlarr/prowlarr).
 It supports both directly searching from the app and querying from any software which supports Prowlarr/Torznab, including [nullseek](https://github.com/LivingWithHippos/phonarr).
 
+Friday project: this project has been implemented by AI under human supervision.
+
 | Server                                                                                                              | Indexers                                                                                                       | Search                                                                                                       |
 |-------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 | <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/server.jpg" alt="Server Screen"> | <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/indexers.jpg" alt="Indexers Screen"> | <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/search.jpg" alt="Search Screen"> |
