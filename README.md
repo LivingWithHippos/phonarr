@@ -1,5 +1,9 @@
 # Phonarr
 
+<p align="center">
+    <img width="200" src="/extra/logo.svg?raw=true" alt="logo">
+</p>
+
 A partial android reimplementation of [Prowlarr](https://github.com/prowlarr/prowlarr).
 It supports both directly searching from the app and querying from any software which supports Prowlarr/Torznab, including [nullseek](https://github.com/LivingWithHippos/phonarr).
 
