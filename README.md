@@ -1,7 +1,15 @@
 # Phonarr
 
 A partial android reimplementation of [Prowlarr](https://github.com/prowlarr/prowlarr).
-It supports both searching inside this app and connecting any software which supports Prowlarr/Torznab, including [nullseek](https://github.com/LivingWithHippos/nullseek).
+It supports both directly searching from the app and querying from any software which supports Prowlarr/Torznab, including [nullseek](https://github.com/LivingWithHippos/phonarr).
+
+| Server                                                                                                              | Indexers                                                                                                       | Search                                                                                                       |
+|-------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/server.jpg" alt="Server Screen"> | <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/indexers.jpg" alt="Indexers Screen"> | <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/search.jpg" alt="Search Screen"> |
+
+| Settings - Dark                                                                                                              | Settings - Light                                                                                                       |
+|-------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/settings-dark.jpg" alt="Settings Dark Screen"> | <img width="150" src="https://raw.githubusercontent.com/LivingWithHippos/phonarr/refs/heads/master/fastlane/metadata/android/en-US/images/phoneScreenshots/settings-light.jpg" alt="Settings - Light Screen"> |
 
 ## How to use
 
