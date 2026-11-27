@@ -50,6 +50,10 @@ import com.github.livingwithhippos.phonarr.core.data.ThemeMode
 import com.github.livingwithhippos.phonarr.ui.theme.FilterChip
 import com.github.livingwithhippos.phonarr.ui.theme.shouldUseDarkTheme
 import com.github.livingwithhippos.phonarr.ui.theme.swatchColor
+import androidx.compose.material3.Surface
+import androidx.compose.ui.tooling.preview.PreviewLightDark
+import com.github.livingwithhippos.phonarr.core.data.AppSettings
+import com.github.livingwithhippos.phonarr.ui.theme.PhonarrTheme
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -57,6 +61,7 @@ import java.time.LocalDate
 fun SettingsScreen(vm: MainViewModel) {
     val settings by vm.settings.collectAsState()
     val indexers by vm.indexers.collectAsState()
+    val testingDoh by vm.testingDoh.collectAsState()
     val scope = rememberCoroutineScope()
     var pendingRestore by remember { mutableStateOf<BackupFile?>(null) }
 
@@ -67,20 +72,67 @@ fun SettingsScreen(vm: MainViewModel) {
         if (uri != null) scope.launch { pendingRestore = vm.readBackup(uri) }
     }
 
+    SettingsContent(
+        settings = settings,
+        indexerCount = indexers.size,
+        testingDoh = testingDoh,
+        pendingRestore = pendingRestore,
+        actions = SettingsActions(
+            onCreateBackup = { createBackup.launch("phonarr-backup-${LocalDate.now()}.json") },
+            // some file managers don't report .json files as application/json
+            onOpenBackup = { openBackup.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
+            onConfirmRestore = { vm.restore(it); pendingRestore = null },
+            onDismissRestore = { pendingRestore = null },
+            onSetOpenSiteIn = vm::setOpenSiteIn,
+            onSetThemeMode = vm::setThemeMode,
+            onSetThemeColor = vm::setThemeColor,
+            onSetStandardFont = vm::setStandardFont,
+            onSetDohEnabled = vm::setDohEnabled,
+            onSetDohProvider = vm::setDohProvider,
+            onSetDohCustomUrl = vm::setDohCustomUrl,
+            onTestDoh = vm::testDoh,
+        ),
+    )
+}
+
+/** What the settings screen can ask for; no-ops by default so previews can pass SettingsActions(). */
+data class SettingsActions(
+    val onCreateBackup: () -> Unit = {},
+    val onOpenBackup: () -> Unit = {},
+    val onConfirmRestore: (BackupFile) -> Unit = {},
+    val onDismissRestore: () -> Unit = {},
+    val onSetOpenSiteIn: (SiteBrowser) -> Unit = {},
+    val onSetThemeMode: (ThemeMode) -> Unit = {},
+    val onSetThemeColor: (ThemeColor) -> Unit = {},
+    val onSetStandardFont: (Boolean) -> Unit = {},
+    val onSetDohEnabled: (Boolean) -> Unit = {},
+    val onSetDohProvider: (DohProvider) -> Unit = {},
+    val onSetDohCustomUrl: (String) -> Unit = {},
+    val onTestDoh: () -> Unit = {},
+)
+
+@Composable
+internal fun SettingsContent(
+    settings: AppSettings,
+    indexerCount: Int,
+    testingDoh: Boolean,
+    pendingRestore: BackupFile?,
+    actions: SettingsActions,
+) {
     pendingRestore?.let { backup ->
         AlertDialog(
-            onDismissRequest = { pendingRestore = null },
+            onDismissRequest = actions.onDismissRestore,
             title = { Text("Restore backup?") },
             text = {
                 Text(
-                    "Replace your ${indexers.size} indexers with the ${backup.indexers.size} from this backup? " +
+                    "Replace your $indexerCount indexers with the ${backup.indexers.size} from this backup? " +
                         "Your settings and API key are replaced too.",
                 )
             },
             confirmButton = {
-                TextButton(onClick = { vm.restore(backup); pendingRestore = null }) { Text("Restore") }
+                TextButton(onClick = { actions.onConfirmRestore(backup) }) { Text("Restore") }
             },
-            dismissButton = { TextButton(onClick = { pendingRestore = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = actions.onDismissRestore) { Text("Cancel") } },
         )
     }
 
@@ -88,7 +140,7 @@ fun SettingsScreen(vm: MainViewModel) {
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        AppearanceCard(vm)
+        AppearanceCard(settings, actions)
         OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp).selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Open site button", style = MaterialTheme.typography.titleMedium)
@@ -97,15 +149,15 @@ fun SettingsScreen(vm: MainViewModel) {
                     "In-app browser",
                     "Cookies from the site, such as a passed Cloudflare check, are reused by Phonarr's searches.",
                     settings.openSiteIn == SiteBrowser.InApp,
-                ) { vm.setOpenSiteIn(SiteBrowser.InApp) }
+                ) { actions.onSetOpenSiteIn(SiteBrowser.InApp) }
                 RadioOption(
                     "Installed browser",
                     "Uses your browser and its saved logins. Phonarr can't reuse its cookies.",
                     settings.openSiteIn == SiteBrowser.External,
-                ) { vm.setOpenSiteIn(SiteBrowser.External) }
+                ) { actions.onSetOpenSiteIn(SiteBrowser.External) }
             }
         }
-        DnsCard(vm)
+        DnsCard(settings, testingDoh, actions)
         OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Backup", style = MaterialTheme.typography.titleMedium)
@@ -115,11 +167,8 @@ fun SettingsScreen(vm: MainViewModel) {
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { createBackup.launch("phonarr-backup-${LocalDate.now()}.json") }) { Text("Create backup") }
-                    // some file managers don't report .json files as application/json
-                    OutlinedButton(onClick = { openBackup.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }) {
-                        Text("Restore backup")
-                    }
+                    Button(onClick = actions.onCreateBackup) { Text("Create backup") }
+                    OutlinedButton(onClick = actions.onOpenBackup) { Text("Restore backup") }
                 }
             }
         }
@@ -128,8 +177,7 @@ fun SettingsScreen(vm: MainViewModel) {
 
 /** Dark mode, theme color and font choices. */
 @Composable
-private fun AppearanceCard(vm: MainViewModel) {
-    val settings by vm.settings.collectAsState()
+private fun AppearanceCard(settings: AppSettings, actions: SettingsActions) {
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Appearance", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -139,7 +187,7 @@ private fun AppearanceCard(vm: MainViewModel) {
                 ThemeMode.entries.forEach { mode ->
                     FilterChip(
                         selected = settings.themeMode == mode,
-                        onClick = { vm.setThemeMode(mode) },
+                        onClick = { actions.onSetThemeMode(mode) },
                         label = { Text(mode.label) },
                     )
                 }
@@ -152,7 +200,7 @@ private fun AppearanceCard(vm: MainViewModel) {
                     val swatch = color.swatchColor(dark)
                     FilterChip(
                         selected = settings.themeColor == color,
-                        onClick = { vm.setThemeColor(color) },
+                        onClick = { actions.onSetThemeColor(color) },
                         leadingIcon = swatch?.let {
                             {
                                 Box(
@@ -168,7 +216,7 @@ private fun AppearanceCard(vm: MainViewModel) {
 
             Row(
                 Modifier.fillMaxWidth()
-                    .toggleable(value = settings.standardFont, onValueChange = vm::setStandardFont, role = Role.Switch),
+                    .toggleable(value = settings.standardFont, onValueChange = actions.onSetStandardFont, role = Role.Switch),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
@@ -205,15 +253,13 @@ private val ThemeColor.label: String
     }
 
 @Composable
-private fun DnsCard(vm: MainViewModel) {
-    val settings by vm.settings.collectAsState()
-    val testing by vm.testingDoh.collectAsState()
+private fun DnsCard(settings: AppSettings, testing: Boolean, actions: SettingsActions) {
     var customUrl by remember { mutableStateOf(settings.dohCustomUrl) }
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
                 Modifier.fillMaxWidth()
-                    .toggleable(value = settings.dohEnabled, onValueChange = vm::setDohEnabled, role = Role.Switch),
+                    .toggleable(value = settings.dohEnabled, onValueChange = actions.onSetDohEnabled, role = Role.Switch),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
@@ -233,14 +279,14 @@ private fun DnsCard(vm: MainViewModel) {
                             provider.label,
                             provider.url ?: "Your own DNS over HTTPS address",
                             settings.dohProvider == provider,
-                        ) { vm.setDohProvider(provider) }
+                        ) { actions.onSetDohProvider(provider) }
                     }
                 }
                 if (settings.dohProvider == DohProvider.Custom) {
                     val invalid = SwitchableDns.endpoint(DohProvider.Custom, customUrl) == null
                     OutlinedTextField(
                         value = customUrl,
-                        onValueChange = { customUrl = it; vm.setDohCustomUrl(it) },
+                        onValueChange = { customUrl = it; actions.onSetDohCustomUrl(it) },
                         label = { Text("Address") },
                         placeholder = { Text("https://dns.example.com/dns-query") },
                         singleLine = true,
@@ -254,7 +300,7 @@ private fun DnsCard(vm: MainViewModel) {
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
-                OutlinedButton(onClick = vm::testDoh, enabled = !testing) {
+                OutlinedButton(onClick = actions.onTestDoh, enabled = !testing) {
                     Text(if (testing) "Testing…" else "Test")
                 }
             }
@@ -272,6 +318,22 @@ private fun RadioOption(title: String, description: String, selected: Boolean, o
         Column(Modifier.padding(start = 12.dp)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(description, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun SettingsPreview() {
+    val settings = AppSettings(
+        apiKey = "0123456789abcdef0123456789abcdef",
+        dohEnabled = true,
+        dohProvider = DohProvider.Custom,
+        dohCustomUrl = "https://dns.example.com/dns-query",
+    )
+    PhonarrTheme(settings) {
+        Surface {
+            SettingsContent(settings, indexerCount = 12, testingDoh = false, pendingRestore = null, actions = SettingsActions())
         }
     }
 }

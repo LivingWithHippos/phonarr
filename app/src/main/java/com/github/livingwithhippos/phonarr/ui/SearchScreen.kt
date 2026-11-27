@@ -40,6 +40,12 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.github.livingwithhippos.phonarr.core.torznab.ReleaseInfo
 import kotlinx.coroutines.launch
+import androidx.compose.material3.Surface
+import androidx.compose.ui.tooling.preview.PreviewLightDark
+import com.github.livingwithhippos.phonarr.core.data.AppSettings
+import com.github.livingwithhippos.phonarr.ui.theme.PhonarrTheme
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -47,11 +53,53 @@ import java.time.format.FormatStyle
 fun SearchScreen(vm: MainViewModel) {
     val state by vm.search.collectAsState()
     val indexers by vm.indexers.collectAsState()
-    var query by rememberSaveable { mutableStateOf("") }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboard.current
     val haptics = LocalHapticFeedback.current
+
+    SearchContent(
+        state = state,
+        canSearch = indexers.any { it.enabled },
+        actions = SearchActions(
+            onSearch = { vm.runSearch(it, "all") },
+            onCopyMagnet = { r ->
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                scope.launch {
+                    val magnet = vm.resolveMagnet(r)
+                    if (magnet == null) {
+                        vm.showMessage("This result has no magnet link")
+                        return@launch
+                    }
+                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Magnet link", magnet)))
+                    // Android 13+ shows its own confirmation when something is copied
+                    if (android.os.Build.VERSION.SDK_INT < 33) vm.showMessage("Magnet link copied")
+                }
+            },
+            onOpen = { r ->
+                scope.launch {
+                    val link = vm.resolveDownload(r) ?: return@launch
+                    try {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, link.toUri()))
+                    } catch (e: ActivityNotFoundException) {
+                        vm.showMessage("No app on this device can open this link")
+                    }
+                }
+            },
+        ),
+    )
+}
+
+/** What the search screen can ask for; no-ops by default so previews can pass SearchActions(). */
+data class SearchActions(
+    val onSearch: (String) -> Unit = {},
+    val onOpen: (ReleaseInfo) -> Unit = {},
+    val onCopyMagnet: (ReleaseInfo) -> Unit = {},
+)
+
+@Composable
+internal fun SearchContent(state: SearchState, canSearch: Boolean, actions: SearchActions) {
+    var query by rememberSaveable { mutableStateOf("") }
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -60,9 +108,14 @@ fun SearchScreen(vm: MainViewModel) {
                 label = { Text("Search all enabled indexers") },
                 singleLine = true, modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { vm.runSearch(query, "all") }),
+                keyboardActions = KeyboardActions(onSearch = { actions.onSearch(query) }),
             )
-            Button(onClick = { vm.runSearch(query, "all") }, enabled = !state.running && indexers.any { it.enabled }) { Text("Go") }
+            Button(
+                onClick = { actions.onSearch(query) },
+                enabled = !state.running && canSearch,
+                // the field reserves 8dp above its box for the floating label: offset to center on the box
+                modifier = Modifier.padding(top = 8.dp),
+            ) { Text("Go") }
         }
         if (state.running) LinearProgressIndicator(Modifier.fillMaxWidth())
         state.errors.forEach { (name, err) ->
@@ -71,31 +124,7 @@ fun SearchScreen(vm: MainViewModel) {
         if (state.searched && !state.running) Text("${state.results.size} results", style = MaterialTheme.typography.labelMedium)
         LazyColumn(Modifier.fillMaxSize()) {
             items(state.results) { r ->
-                ResultRow(
-                    r,
-                    onLongClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        scope.launch {
-                            val magnet = vm.resolveMagnet(r)
-                            if (magnet == null) {
-                                vm.showMessage("This result has no magnet link")
-                                return@launch
-                            }
-                            clipboard.setClipEntry(ClipEntry(ClipData.newPlainText("Magnet link", magnet)))
-                            // Android 13+ shows its own confirmation when something is copied
-                            if (android.os.Build.VERSION.SDK_INT < 33) vm.showMessage("Magnet link copied")
-                        }
-                    },
-                ) {
-                    scope.launch {
-                        val link = vm.resolveDownload(r) ?: return@launch
-                        try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, link.toUri()))
-                        } catch (e: ActivityNotFoundException) {
-                            vm.showMessage("No app on this device can open this link")
-                        }
-                    }
-                }
+                ResultRow(r, onLongClick = { actions.onCopyMagnet(r) }) { actions.onOpen(r) }
                 HorizontalDivider()
             }
         }
@@ -131,4 +160,28 @@ private fun humanSize(bytes: Long): String {
     var i = 0
     while (v >= 1024 && i < units.lastIndex) { v /= 1024; i++ }
     return if (i == 0) "$bytes B" else "%.1f %s".format(v, units[i])
+}
+
+@PreviewLightDark
+@Composable
+private fun SearchPreview() {
+    fun release(title: String, indexer: String, size: Long, seeders: Int, daysAgo: Long) = ReleaseInfo().apply {
+        this.title = title
+        indexerName = indexer
+        this.size = size
+        this.seeders = seeders
+        publishDate = ZonedDateTime.of(2026, 11, 20, 12, 0, 0, 0, ZoneOffset.UTC).minusDays(daysAgo)
+    }
+    val state = SearchState(
+        searched = true,
+        results = listOf(
+            release("The Matrix 1999 1080p BluRay x264", "Test Site", 8_500_000_000, 1024, 1),
+            release("The Matrix Reloaded 2003 2160p WEB-DL", "Other Site", 21_300_000_000, 312, 40),
+            release("The Matrix Revolutions 2003 720p", "Test Site", 4_200_000_000, 87, 400),
+        ),
+        errors = mapOf("Slow Site" to "Connection timed out"),
+    )
+    PhonarrTheme(AppSettings("preview")) {
+        Surface { SearchContent(state, canSearch = true, actions = SearchActions()) }
+    }
 }
