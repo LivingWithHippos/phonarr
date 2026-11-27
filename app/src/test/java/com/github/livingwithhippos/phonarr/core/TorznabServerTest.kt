@@ -89,6 +89,20 @@ class TorznabServerTest {
     }
 
     @Test
+    fun bareApiServesAllIndexers() = testApplication {
+        val s = server()
+        application { with(s) { module() } }
+        val caps = client.get("/api?t=caps&apikey=secret")
+        assertEquals(HttpStatusCode.OK, caps.status)
+        assertTrue(caps.bodyAsText().contains("<caps>"))
+
+        val results = client.get("/api?t=search&q=matrix&apikey=secret").bodyAsText()
+        assertTrue(results, results.contains("<title>The Matrix 1999 1080p</title>"))
+
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api?t=caps&apikey=wrong").status)
+    }
+
+    @Test
     fun rejectsWrongApiKey() = testApplication {
         val s = server()
         application { with(s) { module() } }

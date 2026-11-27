@@ -41,6 +41,7 @@ import java.util.Base64
  *
  * Routes (same shapes as Prowlarr and Jackett so clients can use either style):
  *  - /{id}/api?t=caps|search|tvsearch|movie|music|book&apikey=...
+ *  - /api?t=... (same as /all/api, for clients given only the server address)
  *  - /api/v1/indexer/{id}/newznab?t=...
  *  - /api/v2.0/indexers/{id}/results/torznab/api?t=...
  *  - /{id}/download?apikey=...&link=...
@@ -93,8 +94,10 @@ class TorznabServer(
         }
         routing {
             get("/") {
-                call.respondText("Phonarr is running. Use /{indexerId}/api or /all/api with t=caps.", ContentType.Text.Plain)
+                call.respondText("Phonarr is running. Use /api, /all/api or /{indexerId}/api with t=caps.", ContentType.Text.Plain)
             }
+            // plain Torznab layout: clients given just the server address append /api
+            get("/api") { handleApi("all") }
             get("/{id}/api") { handleApi(call.parameters["id"]!!) }
             get("/api/v1/indexer/{id}/newznab") { handleApi(call.parameters["id"]!!) }
             get("/api/v1/indexer/{id}/newznab/api") { handleApi(call.parameters["id"]!!) }
