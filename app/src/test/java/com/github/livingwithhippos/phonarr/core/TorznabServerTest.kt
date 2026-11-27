@@ -9,6 +9,7 @@ import com.github.livingwithhippos.phonarr.core.server.ServerInfo
 import com.github.livingwithhippos.phonarr.core.server.TorznabServer
 import com.github.livingwithhippos.phonarr.core.torznab.SearchQuery
 import com.github.livingwithhippos.phonarr.core.torznab.SearchType
+import com.github.livingwithhippos.phonarr.core.util.Log
 import io.ktor.client.request.header
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -40,7 +41,7 @@ class TorznabServerTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
-    private fun server(): TorznabServer {
+    private fun server(logRequests: Boolean = false): TorznabServer {
         val dir = tmp.newFolder()
         val defs = File(dir, "Definitions").apply { mkdirs() }
         File(defs, "testsite.yml").writeText(resource("testsite.yml"))
@@ -50,7 +51,41 @@ class TorznabServerTest {
         val indexers = IndexerRepository(dir)
         indexers.save(IndexerConfig(0, "testsite", "Test Site"))
         val service = SearchService(indexers, DefinitionRepository(defs, client), client)
-        return TorznabServer(service, ServerInfo(appVersion = "1.0", osVersion = "16")) { "secret" }
+        return TorznabServer(service, ServerInfo(appVersion = "1.0", osVersion = "16"), logRequests) { "secret" }
+    }
+
+    @Test
+    fun logsRequestsWithoutApiKey() = testApplication {
+        val logged = mutableListOf<String>()
+        val old = Log.sink
+        Log.sink = { _, msg, _ -> if (msg.startsWith("Server ")) synchronized(logged) { logged += msg } }
+        try {
+            val s = server(logRequests = true)
+            application { with(s) { module() } }
+            client.get("/1/api?t=caps&apikey=secret")
+            client.get("/1/api?apikey=wrong&t=caps")
+        } finally {
+            Log.sink = old
+        }
+        assertEquals(logged.toString(), 2, logged.size)
+        assertTrue(logged[0], logged[0].startsWith("Server GET /1/api?t=caps&apikey=REDACTED -> 200"))
+        assertTrue(logged[1], logged[1].startsWith("Server GET /1/api?apikey=REDACTED&t=caps -> 401"))
+        assertTrue(logged.none { "secret" in it || "wrong" in it })
+    }
+
+    @Test
+    fun noRequestLogsByDefault() = testApplication {
+        val logged = mutableListOf<String>()
+        val old = Log.sink
+        Log.sink = { _, msg, _ -> if (msg.startsWith("Server ")) synchronized(logged) { logged += msg } }
+        try {
+            val s = server()
+            application { with(s) { module() } }
+            client.get("/1/api?t=caps&apikey=secret")
+        } finally {
+            Log.sink = old
+        }
+        assertTrue(logged.toString(), logged.isEmpty())
     }
 
     @Test

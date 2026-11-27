@@ -1,6 +1,7 @@
 package com.github.livingwithhippos.phonarr
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import com.github.livingwithhippos.phonarr.browser.BrowserPages
 import com.github.livingwithhippos.phonarr.browser.ChallengeNotifier
 import com.github.livingwithhippos.phonarr.browser.WebViewChallengeSolver
@@ -67,7 +68,11 @@ class AppContainer(app: Application) {
     val indexers = IndexerRepository(filesDir)
     val definitions = DefinitionRepository(File(filesDir, "Definitions"), httpClient)
     val searchService = SearchService(indexers, definitions, httpClient, userAgent = userAgent, solver = solver)
-    val server = TorznabServer(searchService, serverInfo(app)) { settings.settings.value.apiKey }
+    val server = TorznabServer(
+        searchService,
+        serverInfo(app),
+        logRequests = app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0,
+    ) { settings.settings.value.apiKey }
 
     private fun serverInfo(app: Application): ServerInfo {
         val pkg = runCatching { app.packageManager.getPackageInfo(app.packageName, 0) }.getOrNull()

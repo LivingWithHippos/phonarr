@@ -16,7 +16,12 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.request.host
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
+import io.ktor.server.request.queryString
+import io.ktor.server.request.userAgent
 import io.ktor.server.request.port
 import io.ktor.server.response.header
 import io.ktor.server.response.respondBytes
@@ -48,6 +53,8 @@ import java.util.Base64
 class TorznabServer(
     private val search: SearchService,
     private val info: ServerInfo = ServerInfo(),
+    /** log every request (debug builds only: queries can name what the user searches for) */
+    private val logRequests: Boolean = false,
     private val apiKey: () -> String,
 ) {
     private var server: EmbeddedServer<*, *>? = null
@@ -70,6 +77,20 @@ class TorznabServer(
     }
 
     fun Application.module() {
+        if (logRequests) {
+            intercept(ApplicationCallPipeline.Monitoring) {
+                val started = System.nanoTime()
+                try {
+                    proceed()
+                } finally {
+                    val req = context.request
+                    val query = req.queryString().let { if (it.isEmpty()) "" else "?" + redactQuery(it) }
+                    val ms = (System.nanoTime() - started) / 1_000_000
+                    val status = context.response.status()?.value ?: "-"
+                    Log.d("Server ${req.httpMethod.value} ${req.path()}$query -> $status in ${ms}ms (${req.userAgent() ?: "no user agent"})")
+                }
+            }
+        }
         routing {
             get("/") {
                 call.respondText("Phonarr is running. Use /{indexerId}/api or /all/api with t=caps.", ContentType.Text.Plain)
@@ -208,3 +229,8 @@ class TorznabServer(
         }
     }
 }
+
+private val API_KEY_PARAM = Regex("""(?i)(^|&)(apikey|api_key)=[^&]*""")
+
+/** Hides the API key in a query string, for logs. */
+internal fun redactQuery(query: String): String = query.replace(API_KEY_PARAM, "$1$2=REDACTED")
